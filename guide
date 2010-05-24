@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__1E1vCP2pT66b5CHSCUR4XuAuiDTHfCJd7Qjygql+uhg');
+meta::data('document', <<'__vh4M5N6m95BJf7x9f09k4uvlr7VoModd5Aic2bOs1XY');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -286,7 +286,7 @@ begin
       :.
 
       Because failed matches return \verb|null|, we have the very nice idiom that \verb|strings.grep(/pattern/)| does exactly what you'd expect.\footnote{{\tt grep} is defined for arrays; see
-      section \ref{sec:array-functions}}
+      chapter \ref{sec:array-functions}}
 
       Internally the \verb|RegExp.exec()| method is used to achieve this behavior.
 
@@ -509,6 +509,47 @@ begin
       f ('bif')                 // => ['foo', 'bar', 'bif']
       :.
 
+  - Array Functions
+    \label{sec:array-functions}
+    Divergence adds some useful methods to arrays. It's mostly the usual functional stuff:
+
+    e[
+      +[{\tt map}]      Maps a function across the elements of an array and returns a new array of the results. For example:
+
+                        ::
+                        [1, 2, 3].map ('$0 + 1')                        // => [2, 3, 4]
+                        :.
+
+      +[{\tt grep}]     Returns an array of the elements for which a function returns a true-ish value:
+
+                        ::
+                        [1, 2, 3, 4, 5].grep ('$0 % 2')                 // => [1, 3, 5]
+                        :.
+
+      +[{\tt fold}]     Left-reduces an array under a binary operation. Can take additional arguments for preloading:
+
+                        ::
+                        [1, 2, 3].fold ('$0 + $1')                      // => 6
+                        ['b', 'c', 'd'].fold ('$0 + $1', 'a')           // => 'abcd'
+                        :.
+
+      +[{\tt sort\_by}] Sorts an array through a projection; that is, returns the original values, but sorted depending on the output of some other function. The function you provide will
+                        probably be called $O(n \log n)$ times.
+
+                        ::
+                        ['a', 'bc', 'def'].sort ('- $0.length')         // => ['def', 'bc', 'a']
+                        :.
+
+      +[{\tt flat\_map}] Just like \verb|map|, except the results are assumed to be arrays and are concatenated together:
+
+                        ::
+                        [1, 2, 3].flat_map ('[$0, $0 + 1]')             // => [1, 2, 2, 3, 3, 4]
+                        :.
+
+      +[{\tt each}]     Just like \verb|map|, but doesn't store the output of the function (the original array is returned instead). This is slightly more efficient because a second array
+                        isn't allocated.
+    ]e
+
 - Rebase
   - Operator Overloading
     One of the ways Rebase extends JavaScript is with operator overloading. In practice, this entails translating operator invocations into method calls.\footnote{Some operators are not
@@ -603,7 +644,7 @@ begin
         alert (v1 -$* v1);        // Alerts '25'
       }) ();
       :.
-__1E1vCP2pT66b5CHSCUR4XuAuiDTHfCJd7Qjygql+uhg
+__vh4M5N6m95BJf7x9f09k4uvlr7VoModd5Aic2bOs1XY
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -682,9 +723,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__FzN40WxQfT9wsdxVLHGSVMw8PLJdiKUn1Ms9jjmNCB4');
-/tmp/guide.uDzmAfsz0Pdcat7CoL3Q65E+ZyD8+ZtSLKOlu3eJn8A/document.pdf
-__FzN40WxQfT9wsdxVLHGSVMw8PLJdiKUn1Ms9jjmNCB4
+meta::data('pdf-output-file', <<'__Tm7s5fCqAIRrV062qzCY8SLw+cCW1vIhrnqlYHpwxfU');
+/tmp/guide.kDR4qiGwSH1NcLBinuCf41Y7eXLQMsfhaeY8Vetw5o0/document.pdf
+__Tm7s5fCqAIRrV062qzCY8SLw+cCW1vIhrnqlYHpwxfU
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
