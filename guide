@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__bB+JOxSIVa6D9fJnKxjIplfEWJcuGiIcyr95EAU/dZg');
+meta::data('document', <<'__PmjWiP5D6EiFWHTxMyqDnxCAJ17C0UO5GbpREMMRaW4');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -574,7 +574,7 @@ begin
       '$0 + 1'.pluralize() ([1, 2, 3])          // => [2, 3, 4]
       :.
 
-      \verb|d.functions| uses \verb|d.init| internally,\footnote{see chapter \ref{sec:miscellaneous-other-stuff}} so you can pass in multiple arguments, and each argument can either be a hash
+      \verb|d.functions| uses \verb|d.init| internally,\footnote{See chapter \ref{sec:miscellaneous-other-stuff}} so you can pass in multiple arguments, and each argument can either be a hash
       or a function.
 
       To see what extensions have already been made for functionals, you can reference \verb|d.functional_extensions|:
@@ -721,10 +721,11 @@ begin
       [1, 2, 3] >>$- f                              // => [1, 2, 3].flat_map (f)
       :.
 
-      These operators are aliased to regular methods; \verb|*| is aliased to \verb|map|, \verb|/| to \verb|fold|, \verb|%| to \verb|grep|, \verb|+| to \verb|concat|, and \verb|>>$-| to
-      \verb|flat_map|.\footnote{{\tt map}, {\tt grep}, {\tt flat\_map}, and {\tt fold} are provided by the Divergence core library. {\tt concat} is a standard array method.} The \verb|>>$-|
-      notation comes from monadic binding and was chosen because it looks vaguely like Haskell's \verb|>>=|.\footnote{Because $\gg=$ is an assignment operator in JavaScript, the left-hand side
-      must be a proper lvalue. This is enforced within the JavaScript grammar, so had I used this notation all monadic binding would have do be done against unadorned variables.}
+      These operators (for arrays, anyway) are aliased to regular methods; \verb|*| is aliased to \verb|map|, \verb|/| to \verb|fold|, \verb|%| to \verb|grep|, \verb|+| to \verb|concat|, and
+      \verb|>>$-| to \verb|flat_map|.\footnote{{\tt map}, {\tt grep}, {\tt flat\_map}, and {\tt fold} are provided by the Divergence core library. {\tt concat} is a standard array method.} The
+      \verb|>>$-| notation comes from monadic binding and was chosen because it looks vaguely like Haskell's \verb|>>=|.\footnote{Because $\gg=$ is an assignment operator in JavaScript, the
+      left-hand side must be a proper lvalue. This is enforced within the JavaScript grammar, so had I used this notation all monadic binding would have do be done against unadorned
+      variables.}
 
       At this point you might reasonably ask about \verb|>>$-|; this is certainly not a normal-looking operator! Quite right -- Rebase allows you to combine binary operators to form new compound
       ones around certain identifiers. \verb|$| is one such identifier (these are called ``sandwiches''), and the rule is that if the compiled expression tree includes two adjacent binary
@@ -748,9 +749,8 @@ begin
       ::
       var vector2 = '@x = $0, @y = $1'.ctor (
         ([{toString: _ >$> '<#{this.x}, #{this.y}>'}] +
-         '+ - * /'.split(' ') *
-           (op >$> op.maps_to (
-             'new vector2 (@.x #{op} $0.x, @.y #{op} $0.y)'.fn()))) / d.init);
+         '+ - * /'.split(' ') * (op >$> op.maps_to (
+           'new vector2 (@.x #{op} $0.x, @.y #{op} $0.y)'.fn()))) / d.init);
       :.
 
       Now you can use these operators:
@@ -767,11 +767,6 @@ begin
 
       ::
       vector2.prototype['-$*'] = '@x * $0.x + @y * $0.y'.fn();
-      :.
-
-      (Or, more idiomatically, \verb|vector2.prototype['-$*'] = '@x * $0.x + @y * $0.y'.fn();|)
-
-      ::
       d.rebase (function () {
         var v1 = new vector2 (3, 4);
         alert (v1 -$* v1);        // Alerts '25'
@@ -899,7 +894,7 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__bB+JOxSIVa6D9fJnKxjIplfEWJcuGiIcyr95EAU/dZg
+__PmjWiP5D6EiFWHTxMyqDnxCAJ17C0UO5GbpREMMRaW4
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -978,9 +973,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__Dyy4uAEGUFV6GujcJouFVJEXDc9pWeHxcJwVGNSBZNM');
-/tmp/guide.QS5bh9zt3pIYCZOl5xaYRBRkuQSPcXirEZtb0uQbPCw/document.pdf
-__Dyy4uAEGUFV6GujcJouFVJEXDc9pWeHxcJwVGNSBZNM
+meta::data('pdf-output-file', <<'__rt0LWqlgRTjU+UC/jchw1XIYYtNUaLJ8CGd4uWZOFJU');
+/tmp/guide.pJpj+6N1Bp3728FKxn93UJi0pxSEAkNuNK0PLyYebXA/document.pdf
+__rt0LWqlgRTjU+UC/jchw1XIYYtNUaLJ8CGd4uWZOFJU
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
