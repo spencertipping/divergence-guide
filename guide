@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__rOnYQssyRZNmLRtiE/yYshQOD1Mxt3Dvd2UCUDmh0X0');
+meta::data('document', <<'__bB+JOxSIVa6D9fJnKxjIplfEWJcuGiIcyr95EAU/dZg');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -419,7 +419,8 @@ begin
 
       ::
       function () {
-        return f.fn().apply.apply (f, g.fn().apply (this, arguments));
+        var fPrime = f.fn();
+        return fPrime.apply.apply (fPrime, g.fn().apply (this, arguments));
       }
       :.
 
@@ -898,7 +899,7 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__rOnYQssyRZNmLRtiE/yYshQOD1Mxt3Dvd2UCUDmh0X0
+__bB+JOxSIVa6D9fJnKxjIplfEWJcuGiIcyr95EAU/dZg
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -977,9 +978,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__JySSqVsS9GmNDDt3xJobGgmnvE8CtLB6dBGyFdPD4JY');
-/tmp/guide.tucFZXurAje4ebCvl0viPBnHW0lrmqjyCqbf8qf4nSw/document.pdf
-__JySSqVsS9GmNDDt3xJobGgmnvE8CtLB6dBGyFdPD4JY
+meta::data('pdf-output-file', <<'__Dyy4uAEGUFV6GujcJouFVJEXDc9pWeHxcJwVGNSBZNM');
+/tmp/guide.QS5bh9zt3pIYCZOl5xaYRBRkuQSPcXirEZtb0uQbPCw/document.pdf
+__Dyy4uAEGUFV6GujcJouFVJEXDc9pWeHxcJwVGNSBZNM
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
