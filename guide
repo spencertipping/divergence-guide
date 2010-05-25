@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__WLzx3oaLX5hUWKYjm9Jl3HjBi6KXoCXD6V/ifeyKP3I');
+meta::data('document', <<'__IqnfIqCAIIiIlgBM8HDuXHptxatyZj6QZQ9slTrymGM');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -260,7 +260,8 @@ begin
   - Everything is a Function
     The main goal of Divergence is to create a way to convert objects of any basic type into functions. For example, the string \verb|'$0 + $1'| can be promoted into a function that adds its
     first two parameters using the \verb|fn()| method. Similarly, arrays, numbers, booleans, and regular expressions all have defined promotions into functions. I refer to objects that have a
-    \verb|fn()| method as {\em functionals}.\footnote{You can write your own functionals, too; Divergence doesn't make any assumptions about them other than that they provide {\tt fn()}.}
+    \verb|fn()| method as {\em functionals}.\footnote{You can write your own functionals, too (see chapter \ref{sec:writing-and-extending-functionals}); Divergence doesn't make any assumptions
+    about them other than that they provide {\tt fn()}.}
 
     - Booleans and Numbers
       The promotion patterns for these are simple. If \verb|n| is a number, then \verb|n.fn()| returns a function which returns its \verb|n|$^\textrm{th}$ argument (where arguments' indices are
@@ -557,6 +558,52 @@ begin
                         isn't allocated.
     ]e
 
+  - Writing and Extending Functionals
+    \label{sec:writing-and-extending-functionals}
+
+    The definitions of functional operations such as \verb|compose|, \verb|ctor|, etc.~are the same across prototypes. That is, \verb|Number.prototype.ctor| is the same function as
+    \verb|Function.prototype.ctor|, which is the same as \verb|String.prototype.ctor|. This makes it very easy to add your own functional operations.
+
+    - Extending functionals
+      Divergence provides the \verb|d.functions()| method for extending the set of operations on functionals. For example, here is how you might go about defining a method to pluralize a
+      functional:
+
+      ::
+      d.functions ({pluralize: '{|f, xs| xs.map(f) |}.fn (@fn())'.fn()});
+      '$0 + 1'.pluralize() ([1, 2, 3])          // => [2, 3, 4]
+      :.
+
+      \verb|d.functions| uses \verb|d.init| internally,\footnote{see chapter \ref{sec:miscellaneous-other-stuff}} so you can pass in multiple arguments, and each argument can either be a hash
+      or a function.
+
+      To see what extensions have already been made for functionals, you can reference \verb|d.functional_extensions|:
+
+      ::
+      d.functional_extensions.compose           // => [the compose function]
+      :.
+
+      Note, however, that modifications to \verb|functional_extensions| will have no effect on operations that are made available through the basic prototypes. You should always use
+      \verb|d.functions()| to define new operations.
+    
+    - New functionals
+      Let's suppose that we want to write a functional to compose two existing ones. Obviously, in order to be a functional at all it will have to have \verb|fn()|, and in order to be
+      constructable it will need to have a type of some sort. Here's a start then:
+
+      ::
+      var composition = '@lhs = $0, @rhs = $1'.ctor ({
+        fn: '{|f, xs| f.fn.apply (f, xs) |} (@lhs.compose(@rhs), @_)'.fn()});
+      :.
+
+      This gets us \verb|fn()|, but what about all of the default goodies that come with functionals? Divergence provides a method just for this purpose:
+
+      ::
+      d.functional (composition);
+      :.
+
+      This has two effects. First, it adds all of the methods defined in \verb|d.functional_extensions| to \verb|composition|, and second, it pushes \verb|composition| onto
+      \verb|d.functionals|.\footnote{{\tt d.functionals} is an array of things to extend later on when we call {\tt d.functions}. {\tt d.functional\_extensions} is a member of this array;
+      that's why it stays up-to-date.} The net effect of this and \verb|d.functions| is that provided that you use this API, all of your functionals will be kept in the same state.
+
   - Writing Inline Macros
     This is actually really easy. You just use the \verb|macro()| method on \verb|RegExp|, like this:
 
@@ -573,7 +620,15 @@ begin
     transformed by other macros (unless you're prepared to transform their output), and second, your macroexpansions can't rely on macro shortcuts.\footnote{Because of these unfortunate
     limitations, I may change {\tt macro()} to prepend macro definitions in the future.}
 
+    Divergence also includes a mechanism to expand macros without evaluating the result. You can call the \verb|d.macro_expand| on a string to see what will be put inside a function:
+
+    ::
+    d.macro_expand('$_')                // => 'this'
+    d.macro_expand('{|x| x + 1 |}')     // => '(function(x){return  x + 1 })'
+    :.
+
   - Miscellaneous Other Stuff
+    \label{sec:miscellaneous-other-stuff}
     Aside from the core functions, there are some other useful things that Divergence provides. One of them is the \verb|d.map| function, which iterates over the key-value pairs of a hash.
     It's a monadic bind over hashes (analogous to a flat map), so your function returns some hash and at the end they're all merged together to form the result. For example:
 
@@ -816,7 +871,7 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__WLzx3oaLX5hUWKYjm9Jl3HjBi6KXoCXD6V/ifeyKP3I
+__IqnfIqCAIIiIlgBM8HDuXHptxatyZj6QZQ9slTrymGM
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -895,9 +950,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__IbLX9mNjUYDjiUiRo3XuS3dnuf8h2isaYAiobhEghUg');
-/tmp/guide.rk5-S+FHnnvN0AeWkJT+v4iSA5s34+vuEGjRl9dtI3g/document.pdf
-__IbLX9mNjUYDjiUiRo3XuS3dnuf8h2isaYAiobhEghUg
+meta::data('pdf-output-file', <<'__H+LoD0Qm7F5lTXqsm/sT/6rEfyWYqDx3h3oYtnphnMU');
+/tmp/guide.0JSefVp+Bw9IX+6Qd1+FYnr7n3JHfcG6as0iyvTKwT0/document.pdf
+__H+LoD0Qm7F5lTXqsm/sT/6rEfyWYqDx3h3oYtnphnMU
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
