@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__PmjWiP5D6EiFWHTxMyqDnxCAJ17C0UO5GbpREMMRaW4');
+meta::data('document', <<'__FBcRjKe/X8VqdMYZBlObmlrOf8uF2BE9ex6m7at7S4U');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -346,6 +346,8 @@ begin
       :.
 
   - Operations on Functionals
+    \label{sec:operations-on-functionals}
+
     Functionals, as defined in the previous section, are objects with \verb|fn()| methods. Because they present this interface, we can define operations that work on any functional and add
     them to all of the basic prototypes. All of the following functions are present on every functional.
 
@@ -518,6 +520,78 @@ begin
       f ('bif')                 // => ['foo', 'bar', 'bif']
       :.
 
+  - Delimited Continuations
+    \label{sec:delimited-continuations}
+
+    In addition to the operators in chapter \ref{sec:operations-on-functionals}, Divergence includes two more to make it easy to encode delimited continuations in CPS code.\footnote{If the
+    terms ``delimited continuations,'' ``continuation-passing style,'' and ``{\tt call-with-current-continuation}'' are unfamiliar, then you should probably skip this chapter.} The idea is
+    that you can have a localized region of CPS code which then calls an escaping continuation that returns normally. It must escape eventually, but Divergence provides a continuation encoding
+    that lets you run CPS-converted code with tail call optimization.
+
+    For example, consider a regular recursive factorial function:
+
+    ::
+    var fact = function (n) {
+      return n > 1 ? n * fact (n - 1) : n;
+    };
+    fact (5)                    // => 120
+    :.
+
+    This will chew through $O(n)$ stack frames. A tail-recursive encoding would be better:
+
+    ::
+    var fact = function (n, acc) {
+      return n > 1 ? fact (n - 1, acc * n) : acc;
+    };
+    fact (5, 1)                 // => 120
+    :.
+
+    \noindent but because most JavaScript engines don't perform tail-call optimization it has the same problem. This is where you can use the \verb|cps()| and \verb|tail()| methods on
+    functionals to write a constant-stack-space solution:
+
+    ::
+    var fact = function (n, acc, k) {
+      return n > 1 ? fact.tail (n - 1, acc * n, k) : k.tail (acc);
+    };
+    fact.fn(5, 1).cps('$0')     // => 120
+    :.
+
+    The arguments get preloaded onto \verb|fact()|, and \verb|cps| takes the final continuation.\footnote{You can also omit the final continuation, in which case it just returns its first
+    argument.} When that is called, \verb|cps| returns its value. When you call a function in CPS mode, it should return \verb|tail| invocations on other functionals. Two things are important
+    here:
+
+    e[
+      + CPS-mode functions must invoke a continuation using a \verb|tail| call.
+      + The invocation of \verb|tail| must be returned. (Thus ensuring that it is in fact a tail call.)
+    ]e
+
+    - Implementation
+      Encoding delimited continuations is actually not a difficult matter assuming that the language supports tail-call optimization. The real problems are (1) coming up with a notation that
+      looks vaguely like the formal \verb|shift| and \verb|reset|,\footnote{You'll notice that I've completely chickened out here. You have to write CPS-converted code up front, which is quite
+      lame.} and (2) finding some way of delegating to the next continuation that doesn't eat stack frames. Divergence provides this second point with the \verb|cps| and \verb|tail| functions.
+
+      When you perform a tail call, you could think of it as merging another stack frame into the current one; that is, the current stack state gets overwritten and the new variables replace
+      it. JavaScript doesn't provide a way to do this, but it does provide a way to get rid of a stack frame altogether. The \verb|return| statement that's mandatory for \verb|tail| calls does
+      exactly what it looks like, just in a different order:
+
+      ::
+      return fact.tail (n - 1, acc * n);        // returns [fact, [n - 1, acc * n]]
+      :.
+
+      The \verb|cps| function runs a \verb|while| loop that waits for return values of this form. When it finds one, it simply calls \verb|apply|:
+
+      ::
+      while (result[0] !== c)
+        // tail call really happens here:
+        result = result[0].apply (this, result[1]);
+      :.
+
+      Finally, when it sees a tail call to the final continuation, it breaks out of the \verb|while| loop and returns to regular (non-CPS) code:
+
+      ::
+      return c.apply (this, result[1]);
+      :.
+
   - Array Functions
     \label{sec:array-functions}
     Divergence adds some useful methods to arrays. It's mostly the usual functional stuff:
@@ -660,8 +734,8 @@ begin
 
     The initializers are applied in the order provided.
 
-    These are probably the two most useful global functions in the Divergence core. There are a few others, though; I recommend looking over the source code (it isn't long, just 63 lines
-    total) to get a feel for how it works internally. In particular, the builtin macro definitions can be extended; the source code provides examples of how to do this.
+    These are probably the two most useful global functions in the Divergence core. There are a few others, though; I recommend looking over the source code (it isn't long, well under 100
+    lines total) to get a feel for how it works internally. In particular, the builtin macro definitions can be extended; the source code provides examples of how to do this.
 
 - Rebase
   - Getting Started with Rebase
@@ -894,7 +968,7 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__PmjWiP5D6EiFWHTxMyqDnxCAJ17C0UO5GbpREMMRaW4
+__FBcRjKe/X8VqdMYZBlObmlrOf8uF2BE9ex6m7at7S4U
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -973,9 +1047,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__rt0LWqlgRTjU+UC/jchw1XIYYtNUaLJ8CGd4uWZOFJU');
-/tmp/guide.pJpj+6N1Bp3728FKxn93UJi0pxSEAkNuNK0PLyYebXA/document.pdf
-__rt0LWqlgRTjU+UC/jchw1XIYYtNUaLJ8CGd4uWZOFJU
+meta::data('pdf-output-file', <<'__lzTsuwF+bmzjSQvma42An0awb1BheRygRQekHUjRobM');
+/tmp/guide.grx-rDOfkcq0fxBMiDDSdTALVtoWKjobr+mItT-Qsng/document.pdf
+__lzTsuwF+bmzjSQvma42An0awb1BheRygRQekHUjRobM
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
