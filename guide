@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__IqnfIqCAIIiIlgBM8HDuXHptxatyZj6QZQ9slTrymGM');
+meta::data('document', <<'__rOnYQssyRZNmLRtiE/yYshQOD1Mxt3Dvd2UCUDmh0X0');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -663,6 +663,33 @@ begin
     total) to get a feel for how it works internally. In particular, the builtin macro definitions can be extended; the source code provides examples of how to do this.
 
 - Rebase
+  - Getting Started with Rebase
+    Rebase decompiles, transforms, and recompiles functions to provide low-level rewriting of JavaScript's core constructs. (Hence the name.) This process is complex and not for the faint of
+    heart; fortunately, the interface is relatively straightforward. For example:
+
+    ::
+    var f = function () {...};          // A normal function
+    var g = d.rebase (f);               // g is a transformed copy of f
+    :.
+
+    There are, however, a few things to keep in mind:
+
+    e[
+      + Some information is lost during decompilation. Particularly, functions that close over variables will lose their closure bindings, since JavaScript provides no way to access them in a
+        first-class way. So all calls to \verb|d.rebase| should occur at the top-level -- that is, outside of all other function bodies.
+
+      + Transformed or promoted functions can't be rebased directly. Rebasing calls \verb|toString()| on a function to obtain its code, and functions that proxy application don't generally
+        also proxy \verb|toString()|. So, whenever you're rebasing a function, I recommend passing in the function directly:
+
+        ::
+        d.rebase (function () {
+          ...
+        });
+        :.
+    ]e
+
+    The following chapters discuss things you can do inside a rebased function, and how that code gets recompiled into normal JavaScript.
+
   - Operator Overloading
     Rebase lets you overload JavaScript's operators. In practice, this entails translating operator invocations into method calls.\footnote{Some operators are not translated because they cause
     behavior to change. These include {\tt ==}, {\tt ===}, {\tt !=}, {\tt !==}, {\tt =}, {\tt ++}, {\tt --}, {\tt \&\&}, {\tt ||}, {\tt ?:}, function calls, dot-lookups, hash-lookups, commas,
@@ -871,7 +898,7 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__IqnfIqCAIIiIlgBM8HDuXHptxatyZj6QZQ9slTrymGM
+__rOnYQssyRZNmLRtiE/yYshQOD1Mxt3Dvd2UCUDmh0X0
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -950,9 +977,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__H+LoD0Qm7F5lTXqsm/sT/6rEfyWYqDx3h3oYtnphnMU');
-/tmp/guide.0JSefVp+Bw9IX+6Qd1+FYnr7n3JHfcG6as0iyvTKwT0/document.pdf
-__H+LoD0Qm7F5lTXqsm/sT/6rEfyWYqDx3h3oYtnphnMU
+meta::data('pdf-output-file', <<'__AfQ89o22SJJYg90uSNa7u+fubLVi2xA+ce0OGt0bMiE');
+/tmp/guide.AKy22pbFAS+8+lxjMmOUsYMTxLF8GfVrM1Tw4F9UUQc/document.pdf
+__AfQ89o22SJJYg90uSNa7u+fubLVi2xA+ce0OGt0bMiE
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
