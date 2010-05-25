@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__pIsPB4XX8EJBPb7KsUxtwckaDU4aQ/jjEiMCWHd3nE0');
+meta::data('document', <<'__WLzx3oaLX5hUWKYjm9Jl3HjBi6KXoCXD6V/ifeyKP3I');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -260,7 +260,7 @@ begin
   - Everything is a Function
     The main goal of Divergence is to create a way to convert objects of any basic type into functions. For example, the string \verb|'$0 + $1'| can be promoted into a function that adds its
     first two parameters using the \verb|fn()| method. Similarly, arrays, numbers, booleans, and regular expressions all have defined promotions into functions. I refer to objects that have a
-    \verb|fn()| as {\em functionals}.
+    \verb|fn()| method as {\em functionals}.\footnote{You can write your own functionals, too; Divergence doesn't make any assumptions about them other than that they provide {\tt fn()}.}
 
     - Booleans and Numbers
       The promotion patterns for these are simple. If \verb|n| is a number, then \verb|n.fn()| returns a function which returns its \verb|n|$^\textrm{th}$ argument (where arguments' indices are
@@ -285,8 +285,8 @@ begin
       /foo (bar)/.fn() ('bar bif baz')          // => null
       :.
 
-      Because failed matches return \verb|null|, we have the very nice idiom that \verb|strings.grep(/pattern/)| does exactly what you'd expect.\footnote{{\tt grep} is defined for arrays; see
-      chapter \ref{sec:array-functions}}
+      Because failed matches return \verb|null|, we have the very nice idiom that \verb|['string1', 'string2', ...].grep(/pattern/)| does exactly what you'd expect.\footnote{{\tt grep} is
+      defined for arrays; see chapter \ref{sec:array-functions}}
 
       Internally the \verb|RegExp.exec()| method is used to achieve this behavior.
 
@@ -302,8 +302,8 @@ begin
       The \verb|fn()| method exists for functions for the sake of uniformity. It just returns the function.
 
     - Strings
-      The \verb|fn()| method for strings does a lot. In the simplest case, it just wraps the string inside \verb|(function() {return <your string here>})| and runs it through \verb|eval()|. For
-      example, \verb|'arguments[0]'.fn()| is the identity function.
+      The \verb|fn()| method for strings does a lot. In the simplest case, it just wraps the string inside an empty function (e.g. \verb|'foo'.fn()| becomes \verb|(function () {return foo})|)
+      and runs the result through \verb|eval()|. For example, \verb|'arguments[0]'.fn()| is the identity function.
 
       Obviously, nobody wants to type \verb|arguments| that many times, so Divergence provides a simple regular-expression-based macro processor that does some expansions for you.\footnote{Note
       that because it just uses regular expressions on the input, there's no pretense of protecting things inside strings, etc. Rebase implements a much more sophisticated macro processor that
@@ -318,7 +318,7 @@ begin
         + Expressions of the form \verb|{< expression >}| are expanded to expressions of the form \verb|(function () {return expression})|.
       ]e
 
-      After performing those substitutions, the result is put inside \verb|(function () {return <result>})| and run through \verb|eval()|.
+      After performing those substitutions, the result is processed as mentioned before; that is, it's put inside an empty function and \verb|eval|ed.
 
       Here are some examples:
 
@@ -335,7 +335,14 @@ begin
       :.
 
       The last example illustrates an important point here. The substitutions are purely textual, so any expressions that get generated will be run multiple times and will probably generate
-      unaliased values.
+      unaliased values. \verb|@_| is the only thing that looks like a variable but is actually a function, so I doubt this will be a common source of errors. But it is worth remembering.
+
+      A workaround for the last case, incidentally, in case you need to bind a variable:\footnote{And this isn't one of those cases, as it happens. {\tt sort()} does modify the array in-place,
+      but it also returns a reference to the original (which after it returns will be sorted).}
+
+      ::
+      '{|xs| xs.sort(), xs |} (@_)'.fn() (50, 40, 30)           // => [30, 40, 50]
+      :.
 
   - Operations on Functionals
     Functionals, as defined in the previous section, are objects with \verb|fn()| methods. Because they present this interface, we can define operations that work on any functional and add
@@ -537,7 +544,7 @@ begin
                         probably be called $O(n \log n)$ times.
 
                         ::
-                        ['a', 'bc', 'def'].sort ('- $0.length')         // => ['def', 'bc', 'a']
+                        ['a', 'bc', 'def'].sort_by ('- $0.length')      // => ['def', 'bc', 'a']
                         :.
 
       +[{\tt flat\_map}] Just like \verb|map|, except the results are assumed to be arrays and are concatenated together:
@@ -550,14 +557,35 @@ begin
                         isn't allocated.
     ]e
 
-  - Miscellaneous Other Stuff
-    Aside from the core functions, there are some other useful things that Divergence provides. One of them is the \verb|d.map| function, which iterates over the key-value pairs of a hash.
-    It's a monoidal bind over hashes, so your function returns some hash and at the end they're all merged together to form the result. For example:
+  - Writing Inline Macros
+    This is actually really easy. You just use the \verb|macro()| method on \verb|RegExp|, like this:
 
     ::
-    d.map ({foo: 'bar', bif: 'baz'}, '$0.maps_to($1 + '1')')            // => {foo: 'bar1', bif: 'baz1'}
-    d.map ({foo: 'bar'}, 'd.init ($1.maps_to($0), $0.maps_to($1))')     // => {foo: 'bar',  bar: 'foo'}
-    d.map ({foo: 'bar', bif: 'baz'}, '/f/.test($0) && $0.maps_to($1)')  // => {foo: 'bar'}
+    /\$(\w+)/.macro ('"arguments[0]." + $1'.fn());
+    '$foo'.fn()                 // => (function () {return arguments[0].foo})
+    :.
+
+    There are a couple of things to remember here. One is that you must use \verb|fn()| in this case, since it would also be legitimate to replace a word with a constant string. The other is
+    that your function is given as the second argument to the \verb|String.replace()| method, so the first parameter to your function will be the entire match range. (This results in the
+    rather Perlish property that \verb|$1| is the first match, \verb|$2| the second, etc.)
+
+    Also, macros that you define will be run {\em after} all of the previously-defined macros. This means two things. First, patterns that you define can't override patterns that get
+    transformed by other macros (unless you're prepared to transform their output), and second, your macroexpansions can't rely on macro shortcuts.\footnote{Because of these unfortunate
+    limitations, I may change {\tt macro()} to prepend macro definitions in the future.}
+
+  - Miscellaneous Other Stuff
+    Aside from the core functions, there are some other useful things that Divergence provides. One of them is the \verb|d.map| function, which iterates over the key-value pairs of a hash.
+    It's a monadic bind over hashes (analogous to a flat map), so your function returns some hash and at the end they're all merged together to form the result. For example:
+
+    ::
+    d.map ({foo: 'bar', bif: 'baz'}, '$0.maps_to($1 + '1')')
+        // => {foo: 'bar1', bif: 'baz1'}
+
+    d.map ({foo: 'bar'}, 'd.init ($1.maps_to($0), $0.maps_to($1))')
+        // => {foo: 'bar',  bar: 'foo'}
+
+    d.map ({foo: 'bar', bif: 'baz'}, '/f/.test($0) && $0.maps_to($1)')
+        // => {foo: 'bar'}
     :.
 
     Another is the \verb|d.init| function, which takes an object and a series of modifiers, applies the modifiers to the object, and returns the original. The modifiers can be hashes, in which
@@ -565,13 +593,13 @@ begin
 
     ::
     var f = d.init (function () {return 5}, {returns: 5});
-    f.returns                                                           // => 5
-    f ()                                                                // => 5
+    f.returns                           // => 5
+    f ()                                // => 5
     var g = d.init ('$0 + 1'.fn(), {throws: null}
       '@returns = $0, @inverse = $1'.fn ('x plus 1', '$0 - 1'.fn()));
-    g.returns                                                           // => 'x plus 1'
-    g.inverse (5)                                                       // => 4
-    g.throws                                                            // => null
+    g.returns                           // => 'x plus 1'
+    g.inverse (5)                       // => 4
+    g.throws                            // => null
     :.
 
     The initializers are applied in the order provided.
@@ -788,7 +816,7 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__pIsPB4XX8EJBPb7KsUxtwckaDU4aQ/jjEiMCWHd3nE0
+__WLzx3oaLX5hUWKYjm9Jl3HjBi6KXoCXD6V/ifeyKP3I
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -867,9 +895,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__JDQIPxWBtPUFfxl1H3JT9EDfggpfijCKSk3ikt8hBiU');
-/tmp/guide.P0xaH1kChn8q+Zss5GEihLMGp2JLmqKzRyJxKUiI1SQ/document.pdf
-__JDQIPxWBtPUFfxl1H3JT9EDfggpfijCKSk3ikt8hBiU
+meta::data('pdf-output-file', <<'__IbLX9mNjUYDjiUiRo3XuS3dnuf8h2isaYAiobhEghUg');
+/tmp/guide.rk5-S+FHnnvN0AeWkJT+v4iSA5s34+vuEGjRl9dtI3g/document.pdf
+__IbLX9mNjUYDjiUiRo3XuS3dnuf8h2isaYAiobhEghUg
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
