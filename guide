@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__FBcRjKe/X8VqdMYZBlObmlrOf8uF2BE9ex6m7at7S4U');
+meta::data('document', <<'__muQ8CG+IOZZ3+ECokyR2O0RR7jvDTeLLeqstkLhVwQc');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -968,7 +968,25 @@ begin
         + The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
           d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
       ]e
-__FBcRjKe/X8VqdMYZBlObmlrOf8uF2BE9ex6m7at7S4U
+
+    - {\tt literal}
+      Sometimes you want to protect a piece of code from any kind of macro transformation. One reason for this is for performance; another reason might be to work around a bug that pops up due
+      to some incompatibility in the Rebase standard functions. Fortunately, this is quite easy using the \verb|literal| keyword:
+
+      ::
+      d.rebase (function (y) {
+        var x = literal (y + 5) + 6;
+      });
+      :.
+
+      Macro transformation, including string interpolation, operator overloading, and everything else, won't enter a \verb|literal| expression. So the code above translates into:
+
+      ::
+      function (y) {
+        var x = (y + 5)['+'](6);
+      }
+      :.
+__muQ8CG+IOZZ3+ECokyR2O0RR7jvDTeLLeqstkLhVwQc
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1047,9 +1065,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__Rfyo5Wi+T8J/W2GrSmHBq4d1AH0zceP+a2wRPSZvQp4');
-/tmp/guide.87mEoEErfFZ6-Prfp9rAspk+vnVhTC5MxdCaT8YTavw/document.pdf
-__Rfyo5Wi+T8J/W2GrSmHBq4d1AH0zceP+a2wRPSZvQp4
+meta::data('pdf-output-file', <<'__QflIkpK2bKvSa/Uj71WigdhBp5O4OP2K7c6xaStJZCg');
+/tmp/guide.Xt7PDOIp+2JGVBwLLmE2y2CgC3UvraXBxGUmEURUJPQ/document.pdf
+__QflIkpK2bKvSa/Uj71WigdhBp5O4OP2K7c6xaStJZCg
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
