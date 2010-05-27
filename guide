@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__8mloWSJlMyZPhg6KgEM6cLgO5QNy/gwARLuSt/hGINA');
+meta::data('document', <<'__5L8YNeOS3VZSuxs9nmOfYNRn8dLRwnqX1FWjNJ4/qCk');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -306,9 +306,8 @@ begin
       The \verb|fn()| method for strings does a lot. In the simplest case, it just wraps the string inside an empty function (e.g. \verb|'foo'.fn()| becomes \verb|(function () {return foo})|)
       and runs the result through \verb|eval()|. For example, \verb|'arguments[0]'.fn()| is the identity function.
 
-      Obviously, nobody wants to type \verb|arguments| that many times, so Divergence provides a simple regular-expression-based macro processor that does some expansions for you.\footnote{Note
-      that because it just uses regular expressions on the input, there's no pretense of protecting things inside strings, etc. Rebase implements a much more sophisticated macro processor that
-      avoids these problems.} The ones that are enabled by default are:
+      Divergence provides a simple regular-expression-based macro processor that does some expansions for you.\footnote{Note that because it just uses regular expressions on the input, there's
+      no pretense of protecting things inside strings, etc. Rebase implements a much more sophisticated macro processor that avoids these problems.} The ones that are enabled by default are:
 
       e[
         + Expressions of the form \verb|$n|, where \verb|n| is an integer, are expanded to \verb|arguments[n]|. For example, \verb|'$0 + $1'.fn()| adds its first two arguments.
@@ -327,16 +326,40 @@ begin
       '$0[$1]'.fn() ({foo: 'bar'}, 'foo')                       // => 'bar'
       '$_ + $0'.fn().call (5, 6)                                // => 11
       '$0.map({< $0 + 1 >})'.fn() ([1, 2])                      // => [2, 3]
-      '$0.fold({|x, y| x * y |}).fn() ([1, 2, 3, 4, 5])         // => 120
+      '$0.fold({|x, y| x * y |})'.fn() ([1, 2, 3, 4, 5])        // => 120
       '@foo + @bar'.fn().call ({foo: 10, bar: 5})               // => 15
       '@_.length'.fn() (10, 15, 20)                             // => 3
+      :.
 
+      {\bf Note:} These functions are not closures! For example, if you say something like this:
+
+      ::
+      var f = function (x) {
+        return 'x + $0'.fn();
+      }
+      :.
+
+      \noindent you will get unpredictable results, most likely a \verb|ReferenceError| that \verb|x| is undefined. The reason is that \verb|eval()| still obeys lexical scoping rules, which
+      means that all of the functions you \verb|eval| through \verb|String.fn| will share the same scope -- the variables in this scope shouldn't really be used by anyone for that reason.
+      Referring to globals is probably safe, but anything defined inside a function will be unavailable.
+
+      The way to pass in variables is to preload the function:\footnote{See section \ref{sec:preloading}}
+
+      ::
+      var f = function (x) {
+        return '$0 + $1'.fn(x);
+      }
+      :.
+
+      Another important thing to remember is which expansions are function invocations and which are variables. Consider:
+
+      ::
       // Important:
       '@_.sort(), @_'.fn() (50, 40, 30)                         // => [50, 40, 30]
       :.
 
-      The last example illustrates an important point here. The substitutions are purely textual, so any expressions that get generated will be run multiple times and will probably generate
-      unaliased values. \verb|@_| is the only thing that looks like a variable but is actually a function, so I doubt this will be a common source of errors. But it is worth remembering.
+      The substitutions are purely textual, so any expressions that get generated will be run multiple times and will probably generate unaliased values. \verb|@_| is the only thing that looks
+      like a variable but is actually a function call, so I doubt this will be a common source of errors. But it is worth remembering.
 
       A workaround for the last case, incidentally, in case you need to bind a variable:\footnote{And this isn't one of those cases, as it happens. {\tt sort()} does modify the array in-place,
       but it also returns a reference to the original (which after it returns will be sorted).}
@@ -357,7 +380,7 @@ begin
       
       ::
       function () {
-        return f.fn() (g.fn().apply (this, arguments);
+        return f.fn() (g.fn().apply (this, arguments));
       }
       :.
       
@@ -368,8 +391,8 @@ begin
       Composes two functions, but expands the array returned by \verb|g| and supplies the values as arguments to \verb|f|. For example:
 
       ::
-      var f = '[$0, $1, $1]';           // A string, not a function
-      var g = '$0 + $1 * $1';
+      var f = '$0 + $1 * $2';
+      var g = '[$0, $1, $1]';
       f.flat_compose(g) (3, 4)          // => 19
       :.
 
@@ -500,6 +523,7 @@ begin
       \verb|x.constructor.prototype| to alter it.\footnote{In the future I may introduce an option to make the prototype visible.}
 
     - Preloading
+      \label{sec:preloading}
       A feature of the \verb|fn()| method I haven't mentioned is that you can use it to preload arguments to a function. For example:
 
       ::
@@ -687,8 +711,8 @@ begin
     '$foo'.fn()                 // => (function () {return arguments[0].foo})
     :.
 
-    There are a couple of things to remember here. One is that you must use \verb|fn()| in this case, since it would also be legitimate to replace a word with a constant string. The other is
-    that your function is given as the second argument to the \verb|String.replace()| method, so the first parameter to your function will be the entire match range. (This results in the
+    There are a couple of things to remember here. One is that you must use \verb|fn()| on the expander, since it would also be legitimate to replace a word with a constant string. The other
+    is that your function is given as the second argument to the \verb|String.replace()| method, so the first parameter to your function will be the entire match range. (This results in the
     rather Perlish property that \verb|$1| is the first match, \verb|$2| the second, etc.)
 
     Also, macros that you define will be run {\em after} all of the previously-defined macros. This means two things. First, patterns that you define can't override patterns that get
@@ -812,10 +836,10 @@ begin
       ::
       var vector2 = '@x = $0, @y = $1'.ctor ({
         toString: function () {return '<' + this.x + ', ' + this.y + '>'},
-             '+': 'new vector2(@x + $0.x, @y + $0.y)'.fn(),
-             '-': 'new vector2(@x - $0.x, @y - $0.y)'.fn(),
-             '*': 'new vector2(@x * $0.x, @y * $0.y)'.fn(),
-             '/': 'new vector2(@x / $0.x, @y / $0.y)'.fn()});
+             '+': 'new @constructor(@x + $0.x, @y + $0.y)'.fn(),
+             '-': 'new @constructor(@x - $0.x, @y - $0.y)'.fn(),
+             '*': 'new @constructor(@x * $0.x, @y * $0.y)'.fn(),
+             '/': 'new @constructor(@x / $0.x, @y / $0.y)'.fn()});
       :.
 
       An equivalent and more compact way to do this using Rebase function literals and string interpolation:
@@ -824,7 +848,7 @@ begin
       var vector2 = '@x = $0, @y = $1'.ctor (
         ([{toString: _ >$> '<#{this.x}, #{this.y}>'}] +
          '+ - * /'.split(' ') * (op >$> op.maps_to (
-           'new vector2 (@.x #{op} $0.x, @.y #{op} $0.y)'.fn()))) / d.init);
+           'new @constructor (@x #{op} $0.x, @y #{op} $0.y)'.fn()))) / d.init);
       :.
 
       Now you can use these operators:
@@ -986,7 +1010,7 @@ begin
         var x = (y + 5)['+'](6);
       }
       :.
-__8mloWSJlMyZPhg6KgEM6cLgO5QNy/gwARLuSt/hGINA
+__5L8YNeOS3VZSuxs9nmOfYNRn8dLRwnqX1FWjNJ4/qCk
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1065,9 +1089,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__fkxVjBzmYSMmFXEut97AKYgvBlFOhzEeh0jUhdm9JO0');
-/tmp/guide.QjNcQfN61xqnf9ex92YUXlpQ8Hil6ec62Odb1J6DPYU/document.pdf
-__fkxVjBzmYSMmFXEut97AKYgvBlFOhzEeh0jUhdm9JO0
+meta::data('pdf-output-file', <<'__hQEvYIktpMUB5wSIpIlkAHmb3pgSQ2zLcBpd9fW6ANo');
+/tmp/guide.FAcpjSxuZu7O6xrHctybaekigAM3HAiWtFH1It+sZ78/document.pdf
+__hQEvYIktpMUB5wSIpIlkAHmb3pgSQ2zLcBpd9fW6ANo
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
