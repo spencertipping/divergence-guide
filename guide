@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__iTcsqihnp5M7gP9nqqw/KyzOhAdm5nChh7BHVd12LKY');
+meta::data('document', <<'__8mloWSJlMyZPhg6KgEM6cLgO5QNy/gwARLuSt/hGINA');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -812,10 +812,10 @@ begin
       ::
       var vector2 = '@x = $0, @y = $1'.ctor ({
         toString: function () {return '<' + this.x + ', ' + this.y + '>'},
-             '+': 'new vector2(@x + $0.x, @y + $0.y)',
-             '-': 'new vector2(@x - $0.x, @y - $0.y)',
-             '*': 'new vector2(@x * $0.x, @y * $0.y)',
-             '/': 'new vector2(@x / $0.x, @y / $0.y)'});
+             '+': 'new vector2(@x + $0.x, @y + $0.y)'.fn(),
+             '-': 'new vector2(@x - $0.x, @y - $0.y)'.fn(),
+             '*': 'new vector2(@x * $0.x, @y * $0.y)'.fn(),
+             '/': 'new vector2(@x / $0.x, @y / $0.y)'.fn()});
       :.
 
       An equivalent and more compact way to do this using Rebase function literals and string interpolation:
@@ -986,7 +986,7 @@ begin
         var x = (y + 5)['+'](6);
       }
       :.
-__iTcsqihnp5M7gP9nqqw/KyzOhAdm5nChh7BHVd12LKY
+__8mloWSJlMyZPhg6KgEM6cLgO5QNy/gwARLuSt/hGINA
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1065,9 +1065,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__MH0uXc9FAbaMSLlJiLBpS3T0l4NDbux8nd5abZpG+TU');
-/tmp/guide.OljzOHnuIv9KcmgxSFWfhTgvHF6AoSBTQ2N4A+taEqA/document.pdf
-__MH0uXc9FAbaMSLlJiLBpS3T0l4NDbux8nd5abZpG+TU
+meta::data('pdf-output-file', <<'__fkxVjBzmYSMmFXEut97AKYgvBlFOhzEeh0jUhdm9JO0');
+/tmp/guide.QjNcQfN61xqnf9ex92YUXlpQ8Hil6ec62Odb1J6DPYU/document.pdf
+__fkxVjBzmYSMmFXEut97AKYgvBlFOhzEeh0jUhdm9JO0
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
