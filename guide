@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__5L8YNeOS3VZSuxs9nmOfYNRn8dLRwnqX1FWjNJ4/qCk');
+meta::data('document', <<'__cGXmNttWDwIEpkJOPbfVYgvkHN7DH+ZH8lMMo9rNr6U');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -1010,7 +1010,45 @@ begin
         var x = (y + 5)['+'](6);
       }
       :.
-__5L8YNeOS3VZSuxs9nmOfYNRn8dLRwnqX1FWjNJ4/qCk
+
+    - Working with syntax trees
+      Syntax trees have a simple API used for incremental parsing, but most likely you won't want to use it for anything serious. Let's suppose you want to write a macro to expand to a caching
+      function, something that transforms this:
+
+      ::
+      $|| x + y
+      :.
+
+      \noindent into this:
+
+      ::
+      (function (value, computed) {
+        return function () {
+          return computed ? value : (value = (x + y));
+        };
+      }) (null, false)
+      :.
+
+      There are a bunch of syntax nodes there and it would be a major pain to construct them all. The simplest way to write this macro would be:
+
+      ::
+      function (e) {
+        return    e.op == '||' &&
+               e.xs[0] ==  '$' ?
+            d.rebase.parse ('__f__ (null, false)').find ('__f__')[0].
+              replace (0,
+                d.rebase.parse (function (value, computed) {
+                  return function () {
+                    return computed ? value : (value = __expression__);
+                  };
+                }).find ('__expression__')[0].replace (0, e.xs[1]).top()).top() : e;
+      }
+      :.
+
+      I don't expect this makes sense, so I'll go through it. First we construct the function invocation as a quoted string. It needs to be a string, since normal expressions get evaluated
+      eagerly before Rebase can see them. We have Rebase convert it to a syntax tree using \verb|parse()|, then find the \verb|__f__| node and have it replace its first child with a new tree.
+      The new tree here is a function whose \verb|__expression__| is replaced by the right-hand side of the original \verb+||+ operator in the \verb+$||+ expression.
+__cGXmNttWDwIEpkJOPbfVYgvkHN7DH+ZH8lMMo9rNr6U
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1089,9 +1127,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__hQEvYIktpMUB5wSIpIlkAHmb3pgSQ2zLcBpd9fW6ANo');
-/tmp/guide.FAcpjSxuZu7O6xrHctybaekigAM3HAiWtFH1It+sZ78/document.pdf
-__hQEvYIktpMUB5wSIpIlkAHmb3pgSQ2zLcBpd9fW6ANo
+meta::data('pdf-output-file', <<'__qmA9H5ADPpWeLpLPStY4Zv4Q+xMUd76zgtFroVvKjZs');
+/tmp/guide.QHn851yhMnQPR3UzVg9rIxlPwOFkiO69vjL8tY77FT0/document.pdf
+__qmA9H5ADPpWeLpLPStY4Zv4Q+xMUd76zgtFroVvKjZs
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
