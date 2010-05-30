@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__hcy+pcDpvyzBD0DGBxnn41qjIughfv9HD0R+MeVFH68');
+meta::data('document', <<'__IRav7N0unmYqla3Bj6HiWUBKEmZ4WJTCw1b72RdrbhI');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -775,7 +775,8 @@ begin
 
     e[
       + Some information is lost during decompilation. Particularly, functions that close over variables will lose their closure bindings, since JavaScript provides no way to access them in a
-        first-class way. So all calls to \verb|d.rebase| should occur at the top-level -- that is, outside of all other function bodies.
+        first-class way. So all calls to \verb|d.rebase| should occur at the top-level -- that is, outside of all other function bodies.\footnote{Alternatively, you can use {\tt
+        d.rebase.local} with {\tt eval}, which uses {\tt eval}'s dynamic scoping to keep the scope chain intact.}
 
       + Transformed or promoted functions can't be rebased directly. Rebasing calls \verb|toString()| on a function to obtain its code, and functions that proxy application don't generally
         also proxy \verb|toString()|. So, whenever you're rebasing a function, I recommend passing in the function directly:
@@ -907,6 +908,9 @@ begin
       + The result is \verb|eval|ed and that output is returned.
     ]e
 
+    The difference between \verb|d.rebase(f)| and \verb|d.rebase.local(f)| is that \verb|d.rebase.local(f)| leaves off the final \verb|eval| step. This lets you call \verb|eval| directly to
+    change the surrounding scope. (Note that this has performance implications.)
+
     - Built-in macros
       \label{sec:builtin-macros}
       The comments in the Rebase source code go over the mechanics of implementing the built-in macros, but here is what they do:
@@ -925,7 +929,7 @@ begin
           Number.prototype['+='] = '$_ += $0'.fn();     // Can't do this
           :.
 
-          The simplest answer is just to expand all of these expressions and forego whatever operator overloading we might have been able to achieve with them (not a lot as it happens, since
+          The simplest answer is just to expand all of these expressions and forgo whatever operator overloading we might have been able to achieve with them (not a lot as it happens, since
           the JavaScript grammar is quite restrictive about what you can use as an lvalue).
 
         + Inline functions. Rebase provides a syntax for defining functions that is a bit more lightweight than JavaScript's \verb|function () {return x}| syntax. Instead, you can use the
@@ -1048,7 +1052,7 @@ begin
       I don't expect this makes sense, so I'll go through it. First we construct the function invocation as a quoted string. It needs to be a string, since normal expressions get evaluated
       eagerly before Rebase can see them. We have Rebase convert it to a syntax tree using \verb|parse()|, then find the \verb|__f__| node and have it replace its first child with a new tree.
       The new tree here is a function whose \verb|__expression__| is replaced by the right-hand side of the original \verb+||+ operator in the \verb+$||+ expression.
-__hcy+pcDpvyzBD0DGBxnn41qjIughfv9HD0R+MeVFH68
+__IRav7N0unmYqla3Bj6HiWUBKEmZ4WJTCw1b72RdrbhI
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1127,9 +1131,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__F/2DVqky6FGZNTMfEQ5/8e9NgNnC0g5RXxY0uz8kddQ');
-/tmp/guide.fTz+mgQ67yHd9ZgkV44cTmPdhIkCS9iDnke23poNGCQ/document.pdf
-__F/2DVqky6FGZNTMfEQ5/8e9NgNnC0g5RXxY0uz8kddQ
+meta::data('pdf-output-file', <<'__/cfn2OanH5MFosG7zQcfZl8wTyHqzfKt3QwlhKDMqkE');
+/tmp/guide.reoeurkgR91f-jBlzb5vixEvD3c30hrwpssYSXzdaXA/document.pdf
+__/cfn2OanH5MFosG7zQcfZl8wTyHqzfKt3QwlhKDMqkE
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
