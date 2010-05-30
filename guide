@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__cGXmNttWDwIEpkJOPbfVYgvkHN7DH+ZH8lMMo9rNr6U');
+meta::data('document', <<'__hcy+pcDpvyzBD0DGBxnn41qjIughfv9HD0R+MeVFH68');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -915,10 +915,10 @@ begin
         + The first macro performs operator sandwiching. This has to be run before we expand assignments, since otherwise you might have unintended effects from statements such as
           \verb|x += $ >> 5|.
 
-        + The next macro to be run is the assignment-expander. This takes expressions of the form \verb|x += y|, \verb|x <<= y|, etc.~and translates them into their full forms, e.g.~
-          \verb|x = x + y| or \verb|x = x << y|. This is actually necessary to preserve behavior. The reason is that the left-hand side of \verb|+=| or any other assignment operator must be an
-          lvalue, and \verb|this| isn't an lvalue.\footnote{Lvalues are things that can be assigned to. I think the terminology comes from the fact that you can put them on the left-hand side
-          of an assignment operator. Anyway, JavaScript lets you assign to variables and hash and array entries, and that's about it.} The problem becomes apparent when we want numbers to
+        + The next macro to be run is the assignment-expander. This takes expressions of the form \verb|x += y|, \verb|x <<= y|, etc.~and translates them into their full forms,
+          e.g.~\verb|x = x + y| or \verb|x = x << y|. This is actually necessary to preserve behavior. The reason is that the left-hand side of \verb|+=| or any other assignment operator must
+          be an lvalue, and \verb|this| isn't an lvalue.\footnote{Lvalues are things that can be assigned to. I think the terminology comes from the fact that you can put them on the left-hand
+          side of an assignment operator. Anyway, JavaScript lets you assign to variables and hash and array entries, and that's about it.} The problem becomes apparent when we want numbers to
           preserve their behavior:
 
           ::
@@ -1048,7 +1048,7 @@ begin
       I don't expect this makes sense, so I'll go through it. First we construct the function invocation as a quoted string. It needs to be a string, since normal expressions get evaluated
       eagerly before Rebase can see them. We have Rebase convert it to a syntax tree using \verb|parse()|, then find the \verb|__f__| node and have it replace its first child with a new tree.
       The new tree here is a function whose \verb|__expression__| is replaced by the right-hand side of the original \verb+||+ operator in the \verb+$||+ expression.
-__cGXmNttWDwIEpkJOPbfVYgvkHN7DH+ZH8lMMo9rNr6U
+__hcy+pcDpvyzBD0DGBxnn41qjIughfv9HD0R+MeVFH68
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1127,9 +1127,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__qmA9H5ADPpWeLpLPStY4Zv4Q+xMUd76zgtFroVvKjZs');
-/tmp/guide.QHn851yhMnQPR3UzVg9rIxlPwOFkiO69vjL8tY77FT0/document.pdf
-__qmA9H5ADPpWeLpLPStY4Zv4Q+xMUd76zgtFroVvKjZs
+meta::data('pdf-output-file', <<'__F/2DVqky6FGZNTMfEQ5/8e9NgNnC0g5RXxY0uz8kddQ');
+/tmp/guide.fTz+mgQ67yHd9ZgkV44cTmPdhIkCS9iDnke23poNGCQ/document.pdf
+__F/2DVqky6FGZNTMfEQ5/8e9NgNnC0g5RXxY0uz8kddQ
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
