@@ -1,0 +1,839 @@
+\documentclass{report}
+\usepackage{amsmath,amssymb,pxfonts}
+\usepackage[utf8]{inputenc}
+\usepackage[colorlinks]{hyperref}
+\title{Using Divergence and Rebase}
+\author{Spencer Tipping}
+\begin{document}\maketitle\tableofcontents
+
+\chapter* {Introduction}
+   Divergence is a JavaScript library centered around functions and function manipulation. It extends the prototypes of the core JavaScript data types to provide methods that make it easier to
+   program in a functional style, and provides a coherent paradigm for generating functions from different types of values.
+
+   Rebase is a Divergence module that decompiles, transforms, and recompiles functions to extend the capabilities of JavaScript. This includes adding syntactic macros, operator overloading, and
+   string interpolation to the language by default, and it can also be used as a basis for creating other extensions.
+
+   This guide is intended for anyone who read {\em JavaScript in Ten Minutes}\footnote{Freely available at \url{http://github.com/spencertipping/js-in-ten-minutes}} and would like to see some
+   of the ideas put into practice. I think it covers everything, including syntactic macros, continuations, etc. If you haven't yet read {\em JavaScript in Ten Minutes}, I recommend it as
+   pre-reading; this guide picks up about where it left off.
+
+   This guide is separated into two parts. The first part goes over the Divergence core library, and the second part introduces Rebase and the ways that it interacts with Divergence.
+
+\section* {Getting Started}
+     Divergence and Rebase are both hosted on Github. They can be retrieved from \url{http://github.com/spencertipping/divergence} and \url{http://github.com/spencertipping/divergence-rebase},
+     respectively. If you've checked out the user guide repository, then you're all set -- you can open \verb|shell.html| in a non-IE browser and run the examples from there.
+    
+     If you don't have a local checkout or prefer a more hands-on approach, then you can download \verb|divergence.js| and \verb|divergence.rebase.js| from the Rebase repository, save them
+     somewhere, and create an HTML file with the following contents:
+
+\begin{verbatim}
+<html>
+  <head>
+    <script src='divergence.js'></script>
+    <script src='divergence.rebase.js'></script>
+    <script>
+      // Examples can go here
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
+\end{verbatim}
+
+\part {Divergence Core}
+\chapter {Everything is a Function}
+    The main goal of Divergence is to create a way to convert objects of any basic type into functions. For example, the string \verb|'$0 + $1'| can be promoted into a function that adds its
+    first two parameters using the \verb|fn()| method. Similarly, arrays, numbers, booleans, and regular expressions all have defined promotions into functions. I refer to objects that have a
+    \verb|fn()| method as {\em functionals}.\footnote{You can write your own functionals, too (see chapter \ref{sec:writing-and-extending-functionals}); Divergence doesn't make any assumptions
+    about them other than that they provide {\tt fn()}.}
+
+\section {Booleans and Numbers}
+      The promotion patterns for these are simple. If \verb|n| is a number, then \verb|n.fn()| returns a function which returns its \verb|n|$^\textrm{th}$ argument (where arguments' indices are
+      zero-based).\footnote{I haven't tried it yet, but I suspect bad things happen if you use floating-point or negative numbers.} So, for example:
+
+\begin{verbatim}
+var n = 1;
+n.fn() (5, 6)       // => 6
+\end{verbatim}
+
+      Because of JavaScript's eager lexing, you can't say things like \verb|5.fn()|; in this case, the dot is considered to be a part of the floating-point literal \verb|5.|. The way to fix this
+      is to put a space after \verb|5|, so you have \verb|5 .fn()|. Not quite as nice, but fortunately most function promotion is done implicitly in practice.
+
+      Booleans are promoted as uncurried Church booleans\footnote{Don't worry if this sounds unfamiliar; it's just the theoretical background.} -- that is, \verb|true| returns its first
+      parameter and \verb|false| returns its second.
+
+\section {Regular expressions}
+      These get promoted into functions that attempt to match the regular expression against a string. For example:
+
+\begin{verbatim}
+/foo (bar)/.fn() ('foo bar bif')          // => ['foo bar', 'bar']
+/foo (bar)/.fn() ('bar bif baz')          // => null
+\end{verbatim}
+
+      Because failed matches return \verb|null|, we have the very nice idiom that \verb|['string1', 'string2', ...].grep(/pattern/)| does exactly what you'd expect.\footnote{{\tt grep} is
+      defined for arrays; see chapter \ref{sec:array-functions}}
+
+      Internally the \verb|RegExp.exec()| method is used to achieve this behavior.
+
+\section {Arrays}
+      \verb|fn()| distributes across arrays. That is, \verb|[f, g, h].fn()(x)| is equivalent to \verb|[f.fn()(x), g.fn()(x), h.fn()(x)]|. One use of this is to reorder an argument list:
+
+\begin{verbatim}
+var g = f.flat_compose ([1, 0]);    // flat_compose implicitly calls fn()
+g (x, y)                            // the same as f (y, x)
+\end{verbatim}
+
+\section {Functions}
+      The \verb|fn()| method exists for functions for the sake of uniformity. It just returns the function.
+
+\section {Strings}
+      The \verb|fn()| method for strings does a lot. In the simplest case, it just wraps the string inside an empty function (e.g. \verb|'foo'.fn()| becomes \verb|(function () {return foo})|)
+      and runs the result through \verb|eval()|. For example, \verb|'arguments[0]'.fn()| is the identity function.
+
+      Divergence provides a simple regular-expression-based macro processor that does some expansions for you.\footnote{Note that because it just uses regular expressions on the input, there's
+      no pretense of protecting things inside strings, etc. Rebase implements a much more sophisticated macro processor that avoids these problems.} The ones that are enabled by default are:
+
+\begin{enumerate}
+\item Expressions of the form \verb|$n|, where \verb|n| is an integer, are expanded to \verb|arguments[n]|. For example, \verb|'$0 + $1'.fn()| adds its first two arguments.
+\item The expression \verb|$_| is expanded to \verb|this|.
+\item The expression \verb|@_| is expanded to \verb|Array.prototype.slice.call(arguments)|.\footnote{This promotes {\tt arguments} into a proper array.}
+\item Expressions of the form \verb|@foo|, where \verb|foo| is an identifier, are expanded to \verb|this.foo|.
+\item Expressions of the form \verb/{|x, y, z| x + y |}/ are expanded to expressions of the form \verb|(function (x, y, z) {return x + y})|.
+\item Expressions of the form \verb|{< expression >}| are expanded to expressions of the form \verb|(function () {return expression})|.
+\end{enumerate}
+
+      After performing those substitutions, the result is processed as mentioned before; that is, it's put inside an empty function and \verb|eval|ed.
+
+      Here are some examples:
+
+\begin{verbatim}
+'$0[$1]'.fn() ({foo: 'bar'}, 'foo')                       // => 'bar'
+'$_ + $0'.fn().call (5, 6)                                // => 11
+'$0.map({< $0 + 1 >})'.fn() ([1, 2])                      // => [2, 3]
+'$0.fold({|x, y| x * y |})'.fn() ([1, 2, 3, 4, 5])        // => 120
+'@foo + @bar'.fn().call ({foo: 10, bar: 5})               // => 15
+'@_.length'.fn() (10, 15, 20)                             // => 3
+\end{verbatim}
+
+      {\bf Note:} These functions are not closures! For example, if you say something like this:
+
+\begin{verbatim}
+var f = function (x) {
+  return 'x + $0'.fn();
+}
+\end{verbatim}
+
+      \noindent you will get unpredictable results, most likely a \verb|ReferenceError| that \verb|x| is undefined. The reason is that \verb|eval()| still obeys lexical scoping rules, which
+      means that all of the functions you \verb|eval| through \verb|String.fn| will share the same scope -- the variables in this scope shouldn't really be used by anyone for that reason.
+      Referring to globals is probably safe, but anything defined inside a function will be unavailable.
+
+      The way to pass in variables is to preload the function:\footnote{See section \ref{sec:preloading}}
+
+\begin{verbatim}
+var f = function (x) {
+  return '$0 + $1'.fn(x);
+}
+\end{verbatim}
+
+      Another important thing to remember is which expansions are function invocations and which are variables. Consider:
+
+\begin{verbatim}
+// Important:
+'@_.sort(), @_'.fn() (50, 40, 30)                         // => [50, 40, 30]
+\end{verbatim}
+
+      The substitutions are purely textual, so any expressions that get generated will be run multiple times and will probably generate unaliased values. \verb|@_| is the only thing that looks
+      like a variable but is actually a function call, so I doubt this will be a common source of errors. But it is worth remembering.
+
+      A workaround for the last case, incidentally, in case you need to bind a variable:\footnote{And this isn't one of those cases, as it happens. {\tt sort()} does modify the array in-place,
+      but it also returns a reference to the original (which after it returns will be sorted).}
+
+\begin{verbatim}
+'{|xs| xs.sort(), xs |} (@_)'.fn() (50, 40, 30)           // => [30, 40, 50]
+\end{verbatim}
+
+\chapter {Operations on Functionals}
+    \label{sec:operations-on-functionals}
+
+    Functionals, as defined in the previous section, are objects with \verb|fn()| methods. Because they present this interface, we can define operations that work on any functional and add
+    them to all of the basic prototypes. All of the following functions are present on every functional.
+
+\section {{\tt compose}}
+      \label{sec:compose}
+      Composes two functions. Specifically, \verb|f.compose(g)| is equivalent to the function:
+      
+\begin{verbatim}
+function () {
+  return f.fn() (g.fn().apply (this, arguments));
+}
+\end{verbatim}
+      
+      Notice that both \verb|f| and \verb|g| are automatically promoted into functions. This is true of almost all of the higher-order functions provided by Divergence.
+
+\section {{\tt flat\_compose}}
+      \label{sec:flat-compose}
+      Composes two functions, but expands the array returned by \verb|g| and supplies the values as arguments to \verb|f|. For example:
+
+\begin{verbatim}
+var f = '$0 + $1 * $2';
+var g = '[$0, $1, $1]';
+f.flat_compose(g) (3, 4)          // => 19
+\end{verbatim}
+
+      Specifically, \verb|f.flat_compose(g)| is equivalent to:
+
+\begin{verbatim}
+function () {
+  return f.fn().apply (this, g.fn().apply (this, arguments));
+}
+\end{verbatim}
+
+\section {{\tt curry}}
+      \label{sec:curry}
+      Takes an integer \verb|n| and returns a function that will evaluate the original when called \verb|n| times. For example:
+
+\begin{verbatim}
+'$0 + $1 + $2'.curry(1) (1, 2, 3)         // => 6
+'$0 + $1 + $2'.curry(2) (1, 2) (3)        // => 6
+'$0 + $1 + $2'.curry(3) (1) (2) (3)       // => 6
+'$0 + $1 + $2'.curry(4) (1) (2) (3) ()    // => 6
+\end{verbatim}
+
+      Arguments don't have to occur in any particular pattern; they're just stuck onto a queue as they're collected. If you want a more traditional implementation of \verb|curry| that chops
+      off extras, for example, then \verb|flat_compose| and arrays will probably work:
+
+\begin{verbatim}
+var f = '$0 + $1 + $2'.curry(2).flat_compose([0, 1]);
+f (1, 2, 3) (4, 5)                        // => 7
+\end{verbatim}
+
+      \noindent In this example, the first invocation of \verb|f| took only \verb|1| and \verb|2|. \verb|3| was lost because the array \verb|[0, 1]| doesn't return it anywhere. So at this
+      point the queue contains \verb|1| and \verb|2|. On the next invocation, \verb|4| and \verb|5| are passed in, so the queue is now \verb|1, 2, 4, 5|. The function adds the first three
+      arguments, totaling 7.
+
+\section {{\tt proxy}}
+      This function serves two purposes. One is to get a new function that is extensionally equivalent to, but referentially distinct from, the original function,\footnote{Things that are
+      {\em extensionally equivalent} have the same observable behavior, and things that are {\em referentially distinct} refer to different objects. This condition is useful when you want to
+      change the state of one object without affecting the other. One particular use case might be assigning a function as a method for multiple classes. Perhaps classes tag the functions,
+      e.g.~{\tt method.belongsTo = theClass}. In this case you want the methods to behave the same way but have different attributes.} and the other is to completely intercept the invocation
+      of the function.
+
+      Specifically, \verb|f.proxy()| is equivalent to
+
+\begin{verbatim}
+function () {return f.fn().apply (this, arguments)}
+\end{verbatim}
+
+      \noindent and \verb|f.proxy(g)| is equivalent to (get ready, this is confusing):
+
+\begin{verbatim}
+function () {
+  var fPrime = f.fn();
+  return fPrime.apply.apply (fPrime, g.fn().apply (this, arguments));
+}
+\end{verbatim}
+
+      Did you catch that? \verb|apply| is itself a function, so we can \verb|apply| it to things. In this case, we apply it to the result of \verb|g|, which is expected to return an array of
+      the form \verb|[t, [x1, x2, ...]]| -- \verb|t| refers to the \verb|this| value that \verb|f| should receive, and \verb|x1, x2, ...| are the arguments passed to \verb|f|. This is the
+      elephant-gun of composition; most of the time using \verb|compose| or \verb|flat_compose| will do the job.
+
+\section {{\tt bind}}
+      The canonical implementation of \verb|bind|, though this one doesn't preload arguments. It also marks the output function with a reference to the original and to the binding, so:
+
+\begin{verbatim}
+var o = {foo: 0, bar: 1};
+var f = '@foo += @bar + $0';
+var g = f.bind(o);
+g(5)                      // => 6
+g(3)                      // => 10
+g.original                // => f
+g.binding                 // => o
+\end{verbatim}
+
+      The purpose of \verb|bind| is covered in {\em JavaScript in Ten Minutes} and numerous other sources, but the idea is to fix \verb|this| inside a function so that:
+
+\begin{verbatim}
+'$_'.fn() ()              // => [object global]
+'$_'.bind(5)()            // => 5
+\end{verbatim}
+
+      This is not much of an introduction to the concept of function binding; if the purpose or practical use of \verb|bind| is at all unclear, you should definitely read something that goes
+      over what it does.
+
+\section {{\tt ctor}}
+      The \verb|ctor| function provides a one-step way to initialize the prototype of a function. For example, a quick definition of a 2D vector:
+
+\begin{verbatim}
+var vector2 = '@x = $0, @y = $1'.ctor (
+              {plus: 'new @constructor(@x + $0.x, @y + $0.y)'.fn(),
+                dot: '@x * $0.x + @y * $0.y'.fn()});
+var v1 = new vector2 (3, 4);
+v1.dot (v1)                       // => 25
+\end{verbatim}
+
+      \verb|ctor| takes any number of hashes; they will all be merged together into the prototype of the function.
+
+\section {{\tt type}}
+      Prototypes have their advantages and disadvantages. The advantage of performance is paired with the disadvantage of irregular and non-first-class syntax. To illustrate this, consider a
+      proxy function for a class constructor; its job is to pass whatever arguments you give it into the constructor for a class:
+
+\begin{verbatim}
+var my_class = function () {...};
+my_class.prototype.foo = function () {...};
+var my_proxy = function () {
+  return new my_class ();
+};
+\end{verbatim}
+
+      This doesn't quite work, since any arguments passed to \verb|my_proxy| are lost. It would be nice to write it this way:
+
+\begin{verbatim}
+return new my_class.apply (this, arguments);
+\end{verbatim}
+
+      \noindent but that isn't what JavaScript's authors had in mind. As far as I know there is no way around this problem other than using a blank constructor and a first-class initializer:
+
+\begin{verbatim}
+var my_class = function () {};                    // This function is empty
+my_class.prototype.foo = function () {...};
+my_class.initialize = function () {...};          // The real constructor
+var my_proxy = function () {
+  return my_class.initialize.apply (new my_class (), arguments);
+};
+\end{verbatim}
+
+      This pattern is abstracted by \verb|type|, which behaves exactly like \verb|ctor| does, except that it uses an empty constructor, uses the given function as the initializer, and returns
+      that initializer. An important consequence of this is that the prototype becomes inaccessible by the usual route; instead, you have to create an instance and run
+      \verb|x.constructor.prototype| to alter it.\footnote{In the future I may introduce an option to make the prototype visible.}
+
+\section {Preloading}
+      \label{sec:preloading}
+      A feature of the \verb|fn()| method I haven't mentioned is that you can use it to preload arguments to a function. For example:
+
+\begin{verbatim}
+var f = '$0 + $1'.fn (1);
+f (2)                     // => 3
+f (3, 4, 5)               // => 4
+
+var g = '@_.length'.fn (3, 4, 5);
+g (1, 2)                  // => 5
+g (1)                     // => 4
+g ()                      // => 3
+\end{verbatim}
+
+      This feature is present for all of the \verb|fn()| methods, not just on the one for strings:
+
+\begin{verbatim}
+var f = [0, 1, 2].fn ('foo', 'bar');
+f ('bif')                 // => ['foo', 'bar', 'bif']
+\end{verbatim}
+
+\chapter {Delimited Continuations}
+    \label{sec:delimited-continuations}
+
+    In addition to the operators in chapter \ref{sec:operations-on-functionals}, Divergence includes two more to make it easy to encode delimited continuations in CPS code.\footnote{If the
+    terms ``delimited continuations,'' ``continuation-passing style,'' and ``{\tt call-with-current-continuation}'' are unfamiliar, then you should probably skip this chapter.} The idea is
+    that you can have a localized region of CPS code which then calls an escaping continuation that returns normally. It must escape eventually, but Divergence provides a continuation encoding
+    that lets you run CPS-converted code with tail call optimization.
+
+    For example, consider a regular recursive factorial function:
+
+\begin{verbatim}
+var fact = function (n) {
+  return n > 1 ? n * fact (n - 1) : n;
+};
+fact (5)                    // => 120
+\end{verbatim}
+
+    This will chew through $O(n)$ stack frames. A tail-recursive encoding would be better:
+
+\begin{verbatim}
+var fact = function (n, acc) {
+  return n > 1 ? fact (n - 1, acc * n) : acc;
+};
+fact (5, 1)                 // => 120
+\end{verbatim}
+
+    \noindent but because most JavaScript engines don't perform tail-call optimization it has the same problem. This is where you can use the \verb|cps()| and \verb|tail()| methods on
+    functionals to write a constant-stack-space solution:
+
+\begin{verbatim}
+var fact = function (n, acc, k) {
+  return n > 1 ? fact.tail (n - 1, acc * n, k) : k.tail (acc);
+};
+fact.fn(5, 1).cps('$0')     // => 120
+\end{verbatim}
+
+    The arguments get preloaded onto \verb|fact()|, and \verb|cps| takes the final continuation.\footnote{You can also omit the final continuation, in which case it just returns its first
+    argument.} When that is called, \verb|cps| returns its value. When you call a function in CPS mode, it should return \verb|tail| invocations on other functionals. Two things are important
+    here:
+
+\begin{enumerate}
+\item CPS-mode functions must invoke a continuation using a \verb|tail| call.
+\item The invocation of \verb|tail| must be returned. (Thus ensuring that it is in fact a tail call.)
+\end{enumerate}
+
+\section {Implementation}
+      Encoding delimited continuations is actually not a difficult matter assuming that the language supports tail-call optimization. The real problems are (1) coming up with a notation that
+      looks vaguely like the formal \verb|shift| and \verb|reset|,\footnote{You'll notice that I've completely chickened out here. You have to write CPS-converted code up front, which is quite
+      lame.} and (2) finding some way of delegating to the next continuation that doesn't eat stack frames. Divergence provides this second point with the \verb|cps| and \verb|tail| functions.
+
+      When you perform a tail call, you could think of it as merging another stack frame into the current one; that is, the current stack state gets overwritten and the new variables replace
+      it. JavaScript doesn't provide a way to do this, but it does provide a way to get rid of a stack frame altogether. The \verb|return| statement that's mandatory for \verb|tail| calls does
+      exactly what it looks like, just in a different order:
+
+\begin{verbatim}
+return fact.tail (n - 1, acc * n);        // returns [fact, [n - 1, acc * n]]
+\end{verbatim}
+
+      The \verb|cps| function runs a \verb|while| loop that waits for return values of this form. When it finds one, it simply calls \verb|apply|:
+
+\begin{verbatim}
+while (result[0] !== c)
+  // tail call really happens here:
+  result = result[0].apply (this, result[1]);
+\end{verbatim}
+
+      Finally, when it sees a tail call to the final continuation, it breaks out of the \verb|while| loop and returns to regular (non-CPS) code:
+
+\begin{verbatim}
+return c.apply (this, result[1]);
+\end{verbatim}
+
+\chapter {Array Functions}
+    \label{sec:array-functions}
+    Divergence adds some useful methods to arrays. It's mostly the usual functional stuff:
+
+\begin{enumerate}
+\item[{\tt map}]      Maps a function across the elements of an array and returns a new array of the results. For example:
+
+\begin{verbatim}
+[1, 2, 3].map ('$0 + 1')                        // => [2, 3, 4]
+\end{verbatim}
+
+\item[{\tt grep}]     Returns an array of the elements for which a function returns a true-ish value:
+
+\begin{verbatim}
+[1, 2, 3, 4, 5].grep ('$0 % 2')                 // => [1, 3, 5]
+\end{verbatim}
+
+\item[{\tt fold}]     Left-reduces an array under a binary operation. Can take additional arguments for preloading:
+
+\begin{verbatim}
+[1, 2, 3].fold ('$0 + $1')                      // => 6
+['b', 'c', 'd'].fold ('$0 + $1', 'a')           // => 'abcd'
+\end{verbatim}
+
+\item[{\tt sort\_by}] Sorts an array through a projection; that is, returns the original values, but sorted depending on the output of some other function. The function you provide will
+                        probably be called $O(n \log n)$ times.
+
+\begin{verbatim}
+['a', 'bc', 'def'].sort_by ('- $0.length')      // => ['def', 'bc', 'a']
+\end{verbatim}
+
+\item[{\tt flat\_map}] Just like \verb|map|, except the results are assumed to be arrays and are concatenated together:
+
+\begin{verbatim}
+[1, 2, 3].flat_map ('[$0, $0 + 1]')             // => [1, 2, 2, 3, 3, 4]
+\end{verbatim}
+
+\item[{\tt each}]     Just like \verb|map|, but doesn't store the output of the function (the original array is returned instead). This is slightly more efficient because a second array
+                        isn't allocated.
+\end{enumerate}
+
+\chapter {Writing and Extending Functionals}
+    \label{sec:writing-and-extending-functionals}
+
+    The definitions of functional operations such as \verb|compose|, \verb|ctor|, etc.~are the same across prototypes. That is, \verb|Number.prototype.ctor| is the same function as
+    \verb|Function.prototype.ctor|, which is the same as \verb|String.prototype.ctor|. This makes it very easy to add your own functional operations.
+
+\section {Extending functionals}
+      Divergence provides the \verb|d.functions()| method for extending the set of operations on functionals. For example, here is how you might go about defining a method to pluralize a
+      functional:
+
+\begin{verbatim}
+d.functions ({pluralize: '{|f, xs| xs.map(f) |}.fn (@fn())'.fn()});
+'$0 + 1'.pluralize() ([1, 2, 3])          // => [2, 3, 4]
+\end{verbatim}
+
+      \verb|d.functions| uses \verb|d.init| internally,\footnote{See chapter \ref{sec:miscellaneous-other-stuff}} so you can pass in multiple arguments, and each argument can either be a hash
+      or a function.
+
+      To see what extensions have already been made for functionals, you can reference \verb|d.functional_extensions|:
+
+\begin{verbatim}
+d.functional_extensions.compose           // => [the compose function]
+\end{verbatim}
+
+      Note, however, that modifications to \verb|functional_extensions| will have no effect on operations that are made available through the basic prototypes. You should always use
+      \verb|d.functions()| to define new operations.
+    
+\section {New functionals}
+      Let's suppose that we want to write a functional to compose two existing ones. Obviously, in order to be a functional at all it will have to have \verb|fn()|, and in order to be
+      constructable it will need to have a type of some sort. Here's a start then:
+
+\begin{verbatim}
+var composition = '@lhs = $0, @rhs = $1'.ctor ({
+  fn: '{|f, xs| f.fn.apply (f, xs) |} (@lhs.compose(@rhs), @_)'.fn()});
+\end{verbatim}
+
+      This gets us \verb|fn()|, but what about all of the default goodies that come with functionals? Divergence provides a method just for this purpose:
+
+\begin{verbatim}
+d.functional (composition);
+\end{verbatim}
+
+      This has two effects. First, it adds all of the methods defined in \verb|d.functional_extensions| to \verb|composition|, and second, it pushes \verb|composition| onto
+      \verb|d.functionals|.\footnote{{\tt d.functionals} is an array of things to extend later on when we call {\tt d.functions}. {\tt d.functional\_extensions} is a member of this array;
+      that's why it stays up-to-date.} The net effect of this and \verb|d.functions| is that provided that you use this API, all of your functionals will be kept in the same state.
+
+\chapter {Writing Inline Macros}
+    This is actually really easy. You just use the \verb|macro()| method on \verb|RegExp|, like this:
+
+\begin{verbatim}
+/\$(\w+)/.macro ('"arguments[0]." + $1'.fn());
+'$foo'.fn()                 // => (function () {return arguments[0].foo})
+\end{verbatim}
+
+    There are a couple of things to remember here. One is that you must use \verb|fn()| on the expander, since it would also be legitimate to replace a word with a constant string. The other
+    is that your function is given as the second argument to the \verb|String.replace()| method, so the first parameter to your function will be the entire match range. (This results in the
+    rather Perlish property that \verb|$1| is the first match, \verb|$2| the second, etc.)
+
+    Also, macros that you define will be run {\em after} all of the previously-defined macros. This means two things. First, patterns that you define can't override patterns that get
+    transformed by other macros (unless you're prepared to transform their output), and second, your macroexpansions can't rely on macro shortcuts.\footnote{Because of these unfortunate
+    limitations, I may change {\tt macro()} to prepend macro definitions in the future.}
+
+    Divergence also includes a mechanism to expand macros without evaluating the result. You can call the \verb|d.macro_expand| on a string to see what will be put inside a function:
+
+\begin{verbatim}
+d.macro_expand('$_')                // => 'this'
+d.macro_expand('{|x| x + 1 |}')     // => '(function(x){return  x + 1 })'
+\end{verbatim}
+
+\chapter {Miscellaneous Other Stuff}
+    \label{sec:miscellaneous-other-stuff}
+    Aside from the core functions, there are some other useful things that Divergence provides. One of them is the \verb|d.map| function, which iterates over the key-value pairs of a hash.
+    It's a monadic bind over hashes (analogous to a flat map), so your function returns some hash and at the end they're all merged together to form the result. For example:
+
+\begin{verbatim}
+d.map ({foo: 'bar', bif: 'baz'}, '$0.maps_to($1 + '1')')
+    // => {foo: 'bar1', bif: 'baz1'}
+
+d.map ({foo: 'bar'}, 'd.init ($1.maps_to($0), $0.maps_to($1))')
+    // => {foo: 'bar',  bar: 'foo'}
+
+d.map ({foo: 'bar', bif: 'baz'}, '/f/.test($0) && $0.maps_to($1)')
+    // => {foo: 'bar'}
+\end{verbatim}
+
+    Another is the \verb|d.init| function, which takes an object and a series of modifiers, applies the modifiers to the object, and returns the original. The modifiers can be hashes, in which
+    case their values are merged onto the object, or they can be functions, in which case they are applied to the original with \verb|this| equal to the object. For example:
+
+\begin{verbatim}
+var f = d.init (function () {return 5}, {returns: 5});
+f.returns                           // => 5
+f ()                                // => 5
+var g = d.init ('$0 + 1'.fn(), {throws: null}
+  '@returns = $0, @inverse = $1'.fn ('x plus 1', '$0 - 1'.fn()));
+g.returns                           // => 'x plus 1'
+g.inverse (5)                       // => 4
+g.throws                            // => null
+\end{verbatim}
+
+    The initializers are applied in the order provided.
+
+    These are probably the two most useful global functions in the Divergence core. There are a few others, though; I recommend looking over the source code (it isn't long, well under 100
+    lines total) to get a feel for how it works internally. In particular, the builtin macro definitions can be extended; the source code provides examples of how to do this.
+
+\part {Rebase}
+\chapter {Getting Started with Rebase}
+    Rebase decompiles, transforms, and recompiles functions to provide low-level rewriting of JavaScript's core constructs. (Hence the name.) This process is complex and not for the faint of
+    heart; fortunately, the interface is relatively straightforward. For example:
+
+\begin{verbatim}
+var f = function () {...};          // A normal function
+var g = d.rebase (f);               // g is a transformed copy of f
+\end{verbatim}
+
+    There are, however, a few things to keep in mind:
+
+\begin{enumerate}
+\item Some information is lost during decompilation. Particularly, functions that close over variables will lose their closure bindings, since JavaScript provides no way to access them in a
+        first-class way. So all calls to \verb|d.rebase| should occur at the top-level -- that is, outside of all other function bodies.\footnote{Alternatively, you can use {\tt
+        d.rebase.local} with {\tt eval}, which uses {\tt eval}'s dynamic scoping to keep the scope chain intact.}
+
+\item Transformed or promoted functions can't be rebased directly. Rebasing calls \verb|toString()| on a function to obtain its code, and functions that proxy application don't generally
+        also proxy \verb|toString()|. So, whenever you're rebasing a function, I recommend passing in the function directly:
+
+\begin{verbatim}
+d.rebase (function () {
+  ...
+});
+\end{verbatim}
+\end{enumerate}
+
+    The following chapters discuss things you can do inside a rebased function, and how that code gets recompiled into normal JavaScript.
+
+\chapter {Operator Overloading}
+    Rebase lets you overload JavaScript's operators. In practice, this entails translating operator invocations into method calls.\footnote{Some operators are not translated because they cause
+    behavior to change. These include {\tt ==}, {\tt ===}, {\tt !=}, {\tt !==}, {\tt =}, {\tt ++}, {\tt --}, {\tt \&\&}, {\tt ||}, {\tt ?:}, function calls, dot-lookups, hash-lookups, commas,
+    and {\tt !}.} For example, this function:
+
+\begin{verbatim}
+function (x, y) {return x + y}
+\end{verbatim}
+
+    \noindent would be rebased into:
+
+\begin{verbatim}
+function (x, y) {return x['+'](y)}
+\end{verbatim}
+
+\section {Standard operators}
+      Because this transformation also affects regular values such as numbers and strings, Rebase installs handler functions for these objects. If you look at \verb|String.prototype|, for
+      instance, after Rebase is included, you'll probably see a bunch of functions whose names are operators; these are compatibility functions that just delegate to those operators to provide
+      normal operation after the operators have been converted.
+
+      Rebase also provides some default operators in places where JavaScript's defaults aren't very helpful:
+
+\begin{verbatim}
+[1, 2, 3] * (function (x) {return x + 1})     // => [2, 3, 4]
+[1, 2, 3] % (function (x) {return x % 2})     // => [1, 3]
+[1, 2, 3] + [4, 5, 6]                         // => [1, 2, 3, 4, 5, 6]
+[1, 2, 3] / (function (x, y) {return x + y})  // => 6
+[1, 2, 3] >>$- f                              // => [1, 2, 3].flat_map (f)
+\end{verbatim}
+
+      These operators (for arrays, anyway) are aliased to regular methods; \verb|*| is aliased to \verb|map|, \verb|/| to \verb|fold|, \verb|%| to \verb|grep|, \verb|+| to \verb|concat|, and
+      \verb|>>$-| to \verb|flat_map|.\footnote{{\tt map}, {\tt grep}, {\tt flat\_map}, and {\tt fold} are provided by the Divergence core library. {\tt concat} is a standard array method.} The
+      \verb|>>$-| notation comes from monadic binding and was chosen because it looks vaguely like Haskell's \verb|>>=|.\footnote{Because $\gg=$ is an assignment operator in JavaScript, the
+      left-hand side must be a proper lvalue. This is enforced within the JavaScript grammar, so had I used this notation all monadic binding would have do be done against unadorned
+      variables.}
+
+      At this point you might reasonably ask about \verb|>>$-|; this is certainly not a normal-looking operator! Quite right -- Rebase allows you to combine binary operators to form new compound
+      ones around certain identifiers. \verb|$| is one such identifier (these are called ``sandwiches''), and the rule is that if the compiled expression tree includes two adjacent binary
+      operators around a sandwich identifier, then they get merged to form something like \verb|>>$-|. Section \ref{sec:sandwiches} goes over this in more detail.
+
+\section {Defining new operators}
+      It's actually very simple to define new operators for your classes, or to redefine the ones that Rebase defines for standard classes. Here is how you might go about defining a 2D vector,
+      for instance:
+
+\begin{verbatim}
+var vector2 = '@x = $0, @y = $1'.ctor ({
+  toString: function () {return '<' + this.x + ', ' + this.y + '>'},
+       '+': 'new @constructor(@x + $0.x, @y + $0.y)'.fn(),
+       '-': 'new @constructor(@x - $0.x, @y - $0.y)'.fn(),
+       '*': 'new @constructor(@x * $0.x, @y * $0.y)'.fn(),
+       '/': 'new @constructor(@x / $0.x, @y / $0.y)'.fn()});
+\end{verbatim}
+
+      An equivalent and more compact way to do this using Rebase function literals and string interpolation:
+
+\begin{verbatim}
+var vector2 = '@x = $0, @y = $1'.ctor (
+  ([{toString: _ >$> '<#{this.x}, #{this.y}>'}] +
+   '+ - * /'.split(' ') * (op >$> op.maps_to (
+     'new @constructor (@x #{op} $0.x, @y #{op} $0.y)'.fn()))) / d.init);
+\end{verbatim}
+
+      Now you can use these operators:
+
+\begin{verbatim}
+d.rebase (function () {
+  var v1 = new vector2 (3, 4);
+  var v2 = new vector2 (1, 6);
+  alert (v1 + v2);          // Alerts '<4, 10>'
+}) ();
+\end{verbatim}
+
+      You can define compound operators the same way:\footnote{Some compound operators are macros and will never be run. See section \ref{sec:builtin-macros} for more details.}
+
+\begin{verbatim}
+vector2.prototype['-$*'] = '@x * $0.x + @y * $0.y'.fn();
+d.rebase (function () {
+  var v1 = new vector2 (3, 4);
+  alert (v1 -$* v1);        // Alerts '25'
+}) ();
+\end{verbatim}
+
+\section {Sandwiches}
+      \label{sec:sandwiches}
+      Earlier I mentioned the \verb|>>$-| operator, which is really a combination of \verb|>>|, \verb|$|, and \verb|-|. The conditions required for rebase to sandwich these tokens into one
+      are:
+
+\begin{enumerate}
+\item \verb|d.rebase.sandwiches| must map \verb|$| to a true-ish value (which it does by default)
+\item \verb|d.rebase.sandwich_ops| must map \verb|>>| and \verb|-| to true-ish values (which it also does)
+\item If we were interpreting the script normally, the evaluations of \verb|>>| and \verb|-| would have to be adjacent.
+\end{enumerate}
+
+      This third point deserves some explanation. When Rebase is going through your code, it first lexes into tokens, then parses into an expression tree, then transforms that expression tree
+      with any macros that are defined (see chapter \ref{sec:macros}), and finally serializes and \verb|eval|s the result.
+
+      The operator sandwiching doesn't happen at the lexing stage, however. It's implemented as a transformation of the expression tree, which means that some information has been lost. In
+      particular, it is unclear whether you typed \verb|x + y >>$- z| or \verb|x + (y >> $) - z|.\footnote{Since Rebase keeps track of the original parens, this actually wouldn't normally be a
+      problem. The issue arises when serializing a function through SpiderMonkey; this JS engine parses a function into a parse tree and does constant folding before serializing it via {\tt
+      toString}. Unfortunately, this means that a considerable amount of information has been lost.} To avoid mangling the second case, Rebase is conservative about which operators it
+      replaces; thus the restriction that \verb|>>| and \verb|-| must have a direct parent-child relationship in the parse tree.\footnote{This also makes it less feasible to define sandwiched
+      operators whose left and right components have very different precedence. Because of the way SpiderMonkey presents functions, I think this is ultimately a good thing to be aware of.}
+
+\chapter {Macros}
+    \label{sec:macros}
+    Just like Divergence's inline macro processor, Rebase maintains a list of transforming functions not on strings but on expression trees; these are stored in \verb|d.rebase.macros|. When
+    you call \verb|d.rebase(function)|, here is what happens:
+
+\begin{enumerate}
+\item \verb|d.rebase.parse(function.toString())| is called, which translates the function into an expression tree.\footnote{Note that because we're just calling {\tt toString()}, but never
+        actually applying the argument to {\tt d.rebase.parse}, you could in fact rebase just about anything. This includes expression trees, strings, or anything else that has a
+        {\tt toString()} method that produces parseable code.}
+\item The expression tree is traversed depth-first, and each node is folded over all of the macros; that is, \verb|node = macros.fold('$0($1)', node)|. This has the effect of composing all
+        of the macros together, so that if \verb|[m1, m2, ..., mn]| is the macro list, then \verb|node| will become \verb|mn(...(m2(m1(node)))...)|.
+\item \verb|node.toString()| is called on the top tree node (Rebase generates this; it is always \verb|(value)|).
+\item The result is \verb|eval|ed and that output is returned.
+\end{enumerate}
+
+    The difference between \verb|d.rebase(f)| and \verb|d.rebase.local(f)| is that \verb|d.rebase.local(f)| leaves off the final \verb|eval| step. This lets you call \verb|eval| directly to
+    change the surrounding scope. (Note that this has performance implications.)
+
+\section {Built-in macros}
+      \label{sec:builtin-macros}
+      The comments in the Rebase source code go over the mechanics of implementing the built-in macros, but here is what they do:
+
+\begin{enumerate}
+\item The first macro performs operator sandwiching. This has to be run before we expand assignments, since otherwise you might have unintended effects from statements such as
+          \verb|x += $ >> 5|.
+
+\item The next macro to be run is the assignment-expander. This takes expressions of the form \verb|x += y|, \verb|x <<= y|, etc.~and translates them into their full forms,
+          e.g.~\verb|x = x + y| or \verb|x = x << y|. This is actually necessary to preserve behavior. The reason is that the left-hand side of \verb|+=| or any other assignment operator must
+          be an lvalue, and \verb|this| isn't an lvalue.\footnote{Lvalues are things that can be assigned to. I think the terminology comes from the fact that you can put them on the left-hand
+          side of an assignment operator. Anyway, JavaScript lets you assign to variables and hash and array entries, and that's about it.} The problem becomes apparent when we want numbers to
+          preserve their behavior:
+
+\begin{verbatim}
+Number.prototype['+='] = '$_ += $0'.fn();     // Can't do this
+\end{verbatim}
+
+          The simplest answer is just to expand all of these expressions and forgo whatever operator overloading we might have been able to achieve with them (not a lot as it happens, since
+          the JavaScript grammar is quite restrictive about what you can use as an lvalue).
+
+\item Inline functions. Rebase provides a syntax for defining functions that is a bit more lightweight than JavaScript's \verb|function () {return x}| syntax. Instead, you can use the
+          infix operator \verb|>$>|, like this: \verb|x >$> x + 1|. Its precedence is with relational operators, so this code will do what you expect:
+
+\begin{verbatim}
+var f = x >$> x + 1;
+var g = y >$> y << 5;
+\end{verbatim}
+
+          Anything at or below a relational operator, however, must be parenthesized:
+
+\begin{verbatim}
+var f = (x, y) >$> (x !== y);
+var g = (x, y, z) >$> (x ? y : z);
+\end{verbatim}
+
+          Unfortunately, JavaScript won't let you define a nullary function as \verb|() >$> x|. However, you can bind a throwaway variable such as \verb|_| and use that instead:
+          \verb|_ >$> x|. Since JavaScript doesn't track formal parameters anyway, there isn't much difference.
+
+          Note that this macro transforms expressions of the form \verb|args >$> expression| into \verb|(function (args) {return expression})|. This has some important consequences, perhaps
+          foremost that \verb|this| and \verb|arguments| take on different meanings on the right-hand side of \verb|>$>|. So, for example, this function will not do what seems obvious:
+
+\begin{verbatim}
+String.prototype['*'] = f >$> (
+  this.split('').map(x >$> f(x, this)));
+\end{verbatim}
+
+          The inner \verb|this| that gets passed to \verb|f| will be \verb|[object global]|, not the original string.
+
+\item Comment processing. Rebase supports structural commenting, which lets you remove things on an expression basis and replace them with \verb|undefined|. For example:
+
+\begin{verbatim}
+var f = x && comment(y + z);
+\end{verbatim}
+
+          If you run this code, \verb|y + z| will never be evaluated (in fact, it won't even appear in the resulting function). The code that will be generated looks like this instead:
+
+\begin{verbatim}
+var f = x && undefined;
+\end{verbatim}
+
+\item String interpolation. This is one of my favorites because it's so useful. Rebase will go through your program and expand every string with \verb|#{...}| segments into a string
+          concatenation. For example:
+
+\begin{verbatim}
+var s = 'The number is #{3 + 5}';
+\end{verbatim}
+
+          \noindent is expanded into:
+
+\begin{verbatim}
+var s = ('The number is ' + (3 + 5) + '');
+\end{verbatim}
+
+          Code inside these escapes is rebased, so you can also say things like this:
+
+\begin{verbatim}
+var s = 'The number is #{(x >$> x + 1) (5)}';
+\end{verbatim}
+
+          Strings without these sequences are left alone. This is necessary to preserve the integrity of hash-keys, which must be unparenthesized literal strings or identifiers.
+
+\item The last thing that happens is operator overloading. Once we've translated everything, we replace all binary operators\footnote{With some exceptions -- see {\tt
+          d.rebase.should\_convert}, for instance.} with method calls. Precedence is preserved, so you get nested expressions of the form \verb|x['+'](y['*'](z))|, for instance.
+\end{enumerate}
+
+\section {{\tt literal}}
+      Sometimes you want to protect a piece of code from any kind of macro transformation. One reason for this is for performance; another reason might be to work around a bug that pops up due
+      to some incompatibility in the Rebase standard functions. Fortunately, this is quite easy using the \verb|literal| keyword:
+
+\begin{verbatim}
+d.rebase (function (y) {
+  var x = literal (y + 5) + 6;
+});
+\end{verbatim}
+
+      Macro transformation, including string interpolation, operator overloading, and everything else, won't enter a \verb|literal| expression. So the code above translates into:
+
+\begin{verbatim}
+function (y) {
+  var x = (y + 5)['+'](6);
+}
+\end{verbatim}
+
+\section {Working with syntax trees}
+      Syntax trees have a simple API used for incremental parsing, but most likely you won't want to use it for anything serious. Let's suppose you want to write a macro to expand to a caching
+      function, something that transforms this:
+
+\begin{verbatim}
+$|| x + y
+\end{verbatim}
+
+      \noindent into this:
+
+\begin{verbatim}
+(function (value, computed) {
+  return function () {
+    return computed ? value : (value = (x + y));
+  };
+}) (null, false)
+\end{verbatim}
+
+      There are a bunch of syntax nodes there and it would be a major pain to construct them all. The simplest way to write this macro would be:
+
+\begin{verbatim}
+function (e) {
+  return    e.op == '||' &&
+         e.xs[0] ==  '$' ?
+      d.rebase.parse ('__f__ (null, false)').find ('__f__')[0].
+        replace (0,
+          d.rebase.parse (function (value, computed) {
+            return function () {
+              return computed ? value : (value = __expression__);
+            };
+          }).find ('__expression__')[0].replace (0, e.xs[1]).top()).top() : e;
+}
+\end{verbatim}
+
+      I don't expect this makes sense, so I'll go through it. First we construct the function invocation as a quoted string. It needs to be a string, since normal expressions get evaluated
+      eagerly before Rebase can see them. We have Rebase convert it to a syntax tree using \verb|parse()|, then find the \verb|__f__| node and have it replace its first child with a new tree.
+      The new tree here is a function whose \verb|__expression__| is replaced by the right-hand side of the original \verb+||+ operator in the \verb+$||+ expression.
+\end{document}
