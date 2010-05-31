@@ -744,6 +744,39 @@ String.prototype['*'] = f >$> (
 
           The inner \verb|this| that gets passed to \verb|f| will be \verb|[object global]|, not the original string.
 
+\item Function preloading. Because there isn't a good way to bind variables in expression mode, Rebase uses inline functions for this purpose. To localize the variable name with its value,
+          you can use the \verb+|$>+ operator:
+
+\begin{verbatim}
+5 |$> (x >$> x + 1)   // => 6
+\end{verbatim}
+
+          This code gets translated into:
+
+\begin{verbatim}
+(x >$> x + 1) (5)
+\end{verbatim}
+
+          Note that you don't have to use \verb+|$>+ with inline functions; it can also be used with named functions:
+
+\begin{verbatim}
+'foo' |$> document.getElementById     // preserves binding to document
+\end{verbatim}
+
+          You can preload multiple arguments at once, too:
+
+\begin{verbatim}
+(5, 6) |$> ((x, y) >$> x + y)         // => 11
+\end{verbatim}
+
+          Unfortunately, due to JavaScript's syntax, you can't perform nullary invocation:
+
+\begin{verbatim}
+() |$> f      // syntax error
+\end{verbatim}
+
+          However, none of the use-cases for preloading functions involve nullary application.
+
 \item Comment processing. Rebase supports structural commenting, which lets you remove things on an expression basis and replace them with \verb|undefined|. For example:
 
 \begin{verbatim}

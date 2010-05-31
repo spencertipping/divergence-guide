@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__IRav7N0unmYqla3Bj6HiWUBKEmZ4WJTCw1b72RdrbhI');
+meta::data('document', <<'__zeu2uQG3TjMrbauFVRjqJl3a/N+sWpOovAOLy1gqs30');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -960,6 +960,39 @@ begin
 
           The inner \verb|this| that gets passed to \verb|f| will be \verb|[object global]|, not the original string.
 
+        + Function preloading. Because there isn't a good way to bind variables in expression mode, Rebase uses inline functions for this purpose. To localize the variable name with its value,
+          you can use the \verb+|$>+ operator:
+
+          ::
+          5 |$> (x >$> x + 1)   // => 6
+          :.
+
+          This code gets translated into:
+
+          ::
+          (x >$> x + 1) (5)
+          :.
+
+          Note that you don't have to use \verb+|$>+ with inline functions; it can also be used with named functions:
+
+          ::
+          'foo' |$> document.getElementById     // preserves binding to document
+          :.
+
+          You can preload multiple arguments at once, too:
+
+          ::
+          (5, 6) |$> ((x, y) >$> x + y)         // => 11
+          :.
+
+          Unfortunately, due to JavaScript's syntax, you can't perform nullary invocation:
+
+          ::
+          () |$> f      // syntax error
+          :.
+
+          However, none of the use-cases for preloading functions involve nullary application.
+
         + Comment processing. Rebase supports structural commenting, which lets you remove things on an expression basis and replace them with \verb|undefined|. For example:
 
           ::
@@ -1052,7 +1085,7 @@ begin
       I don't expect this makes sense, so I'll go through it. First we construct the function invocation as a quoted string. It needs to be a string, since normal expressions get evaluated
       eagerly before Rebase can see them. We have Rebase convert it to a syntax tree using \verb|parse()|, then find the \verb|__f__| node and have it replace its first child with a new tree.
       The new tree here is a function whose \verb|__expression__| is replaced by the right-hand side of the original \verb+||+ operator in the \verb+$||+ expression.
-__IRav7N0unmYqla3Bj6HiWUBKEmZ4WJTCw1b72RdrbhI
+__zeu2uQG3TjMrbauFVRjqJl3a/N+sWpOovAOLy1gqs30
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1131,9 +1164,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__6Y2jW+ZHcITSX/RFwy4rGd+GpXPhWUkmXDM27k9Sau4');
-/tmp/guide.XEpRc3zy7eLEqB8Y8nkRvnnm01jamy6bsY7c0YLs+dQ/document.pdf
-__6Y2jW+ZHcITSX/RFwy4rGd+GpXPhWUkmXDM27k9Sau4
+meta::data('pdf-output-file', <<'__jnSyQmOaippFMIgVs9J08k3SeZce26gjQw4cVXuACrI');
+/tmp/guide.wR0mbuPIw5XU2rpDg170+bxKpS39lycaUPQ-t1214sg/document.pdf
+__jnSyQmOaippFMIgVs9J08k3SeZce26gjQw4cVXuACrI
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
