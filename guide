@@ -1192,9 +1192,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__ruRv8zB87Eu09s8Nr4+t1xNrS/tTqQj7IXDdscbhOc8');
-/tmp/guide.cboWbzUZyeGnZWNo-NcJtBKf-kw0J8bPGnmrbCri0h8/document.pdf
-__ruRv8zB87Eu09s8Nr4+t1xNrS/tTqQj7IXDdscbhOc8
+meta::data('pdf-output-file', <<'__YEfemyt51Dkv+C8OP/gkF4IfrdpENBccZVDU2a5WFZw');
+/tmp/guide.E2-k30XJX0PjqifAMuLmlc7aZvxR7tEe91OwOu7u-CU/document.pdf
+__YEfemyt51Dkv+C8OP/gkF4IfrdpENBccZVDU2a5WFZw
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince

@@ -20,7 +20,7 @@
    This guide is separated into two parts. The first part goes over the Divergence core library, and the second part introduces Rebase and the ways that it interacts with Divergence.
 
 \section* {Getting Started}
-     Divergence and Rebase are both hosted on Github. They can be retrieved from \url{http://github.com/spencertipping/divergence} and \url{http://github.com/spencertipping/divergence-rebase},
+     Divergence and Rebase are both hosted on Github. They can be retrieved from \url{http://github.com/spencertipping/divergence} and \url{http://github.com/spencertipping/divergence.rebase},
      respectively. If you've checked out the user guide repository, then you're all set -- you can open \verb|shell.html| in a non-IE browser and run the examples from there.
     
      If you don't have a local checkout or prefer a more hands-on approach, then you can download \verb|divergence.js| and \verb|divergence.rebase.js| from the Rebase repository, save them
@@ -305,6 +305,34 @@ var my_proxy = function () {
       This pattern is abstracted by \verb|type|, which behaves exactly like \verb|ctor| does, except that it uses an empty constructor, uses the given function as the initializer, and returns
       that initializer. An important consequence of this is that the prototype becomes inaccessible by the usual route; instead, you have to create an instance and run
       \verb|x.constructor.prototype| to alter it.\footnote{In the future I may introduce an option to make the prototype visible.}
+
+\section {{\tt fix}}
+      A fixed-point method to allow a function to call itself recursively. For example, the canonical implementation of factorial:
+
+\begin{verbatim}
+var factorial = function (n) {
+  return n > 1 ? n * factorial (n - 1) : n;
+};
+\end{verbatim}
+
+      \noindent can be rewritten this way using \verb|fix()|:
+
+\begin{verbatim}
+var factorial = (function (f) {
+  return function (n) {
+    return n > 1 ? n * f (n - 1) : n;
+  };
+}).fix ();
+\end{verbatim}
+
+      The outer function is invoked immediately with a suitable value for \verb|f|. This value is not referentially equivalent to the outer function, but when invoked it will proxy to the
+      outer function.
+
+      This is most useful in cases where you want an anonymous recursive function:
+
+\begin{verbatim}
+xs.map (some_recursive_function);
+\end{verbatim}
 
 \section {Preloading}
       \label{sec:preloading}
