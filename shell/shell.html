@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>Divergence Guide Shell</title>
+    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.js'></script>
+    <script src='divergence.js'></script>
+    <script src='divergence.rebase.js'></script>
+
+    <script>
+      d.rebase (function () {var result_row = (input, value) >$> ($('<div class="result"><a href="#" onclick="return false"></a></div>') |$> (r >$> (
+                               r.find ('a').click (_ >$> console.log (value)).css ('float: right').text ('Log to console'),
+                               r.append ($('<span class="input"></span>') .text (input)).
+                                 append ($('<span class="result"></span>').text (value && value.toString() || (value === undefined ? 'undefined' : value === null ? 'null' : value))),
+                               r)));
+
+                             $(_ >$> $('#evaluate').click (_ >$> ($('#log').prepend (result_row ($('#input').val(), eval ($('#input').val()))),
+                                                                  $('#input').val (''))))}) ();
+    </script>
+
+    <style>
+      body {font-family: sans-serif; width: 960px; margin: auto}
+
+      .column1 {position: absolute; left: 0; width: 470px}
+      .column2 {position: absolute; left: 480px; width: 470px}
+      .result  {font-family: monospace}
+
+      .input:after {text: content(" => ")}
+    </style>
+  </head>
+
+  <body>
+    <div class='column1'>
+      <textarea id='input' rows='10' style='width:470px'></textarea>
+      <div><button id='evaluate'>Evaluate</button></div>
+    </div>
+
+    <div class='column2' id='log'>
+    </div>
+  </body>
+</html>

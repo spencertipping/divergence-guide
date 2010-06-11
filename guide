@@ -217,7 +217,7 @@ meta::data('default-action', <<'__zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc');
 shell
 __zmNcTqv/Xk9W26j7HjnKI1UwqitrGFM+7xrzhiAWxXc
 
-meta::data('document', <<'__zeu2uQG3TjMrbauFVRjqJl3a/N+sWpOovAOLy1gqs30');
+meta::data('document', <<'__g5621xcpfnkmxdEDiZKuYiAwYYGDWeb27UKmHnWK/+k');
 = Using Divergence and Rebase
 a Spencer Tipping
 begin
@@ -236,7 +236,7 @@ begin
    This guide is separated into two parts. The first part goes over the Divergence core library, and the second part introduces Rebase and the ways that it interacts with Divergence.
 
    - Getting Started
-     Divergence and Rebase are both hosted on Github. They can be retrieved from \url{http://github.com/spencertipping/divergence} and \url{http://github.com/spencertipping/divergence-rebase},
+     Divergence and Rebase are both hosted on Github. They can be retrieved from \url{http://github.com/spencertipping/divergence} and \url{http://github.com/spencertipping/divergence.rebase},
      respectively. If you've checked out the user guide repository, then you're all set -- you can open \verb|shell.html| in a non-IE browser and run the examples from there.
     
      If you don't have a local checkout or prefer a more hands-on approach, then you can download \verb|divergence.js| and \verb|divergence.rebase.js| from the Rebase repository, save them
@@ -521,6 +521,34 @@ begin
       This pattern is abstracted by \verb|type|, which behaves exactly like \verb|ctor| does, except that it uses an empty constructor, uses the given function as the initializer, and returns
       that initializer. An important consequence of this is that the prototype becomes inaccessible by the usual route; instead, you have to create an instance and run
       \verb|x.constructor.prototype| to alter it.\footnote{In the future I may introduce an option to make the prototype visible.}
+
+    - {\tt fix}
+      A fixed-point method to allow a function to call itself recursively. For example, the canonical implementation of factorial:
+
+      ::
+      var factorial = function (n) {
+        return n > 1 ? n * factorial (n - 1) : n;
+      };
+      :.
+
+      \noindent can be rewritten this way using \verb|fix()|:
+
+      ::
+      var factorial = (function (f) {
+        return function (n) {
+          return n > 1 ? n * f (n - 1) : n;
+        };
+      }).fix ();
+      :.
+
+      The outer function is invoked immediately with a suitable value for \verb|f|. This value is not referentially equivalent to the outer function, but when invoked it will proxy to the
+      outer function.
+
+      This is most useful in cases where you want an anonymous recursive function:
+
+      ::
+      xs.map (some_recursive_function);
+      :.
 
     - Preloading
       \label{sec:preloading}
@@ -1085,7 +1113,7 @@ begin
       I don't expect this makes sense, so I'll go through it. First we construct the function invocation as a quoted string. It needs to be a string, since normal expressions get evaluated
       eagerly before Rebase can see them. We have Rebase convert it to a syntax tree using \verb|parse()|, then find the \verb|__f__| node and have it replace its first child with a new tree.
       The new tree here is a function whose \verb|__expression__| is replaced by the right-hand side of the original \verb+||+ operator in the \verb+$||+ expression.
-__zeu2uQG3TjMrbauFVRjqJl3a/N+sWpOovAOLy1gqs30
+__g5621xcpfnkmxdEDiZKuYiAwYYGDWeb27UKmHnWK/+k
 
 meta::data('header', <<'__TScsjlxnmg+H93SbYn5IUj+TXwiGdMAWt3odrYs+3nc');
 \documentclass{report}
@@ -1164,9 +1192,9 @@ meta::data('output-dir', <<'__6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ');
 /tmp
 __6WcazSRIScVxZ8ZY+i+Wl1IEj3qxhKPc9cRstNVq4SQ
 
-meta::data('pdf-output-file', <<'__jnSyQmOaippFMIgVs9J08k3SeZce26gjQw4cVXuACrI');
-/tmp/guide.wR0mbuPIw5XU2rpDg170+bxKpS39lycaUPQ-t1214sg/document.pdf
-__jnSyQmOaippFMIgVs9J08k3SeZce26gjQw4cVXuACrI
+meta::data('pdf-output-file', <<'__ruRv8zB87Eu09s8Nr4+t1xNrS/tTqQj7IXDdscbhOc8');
+/tmp/guide.cboWbzUZyeGnZWNo-NcJtBKf-kw0J8bPGnmrbCri0h8/document.pdf
+__ruRv8zB87Eu09s8Nr4+t1xNrS/tTqQj7IXDdscbhOc8
 
 meta::data('pdf-reader', <<'__BlFO10Obn0hAHVxLShDpKtlpv0BTeJ7iqm1v7vjCM+A');
 evince
